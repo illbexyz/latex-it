@@ -1,0 +1,33 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity"
+    android:focusable="true" android:focusableInTouchMode="true">
+
+    <me.albertonicoletti.latex.VerticalScrollView
+        android:id="@+id/editor_scroll_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scrollbars="vertical"
+        android:fillViewport="true"
+        android:background="@null">
+
+        <me.albertonicoletti.latex.Editor
+            android:id="@+id/editor"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:bufferType="spannable"
+            android:textCursorDrawable="@null"
+            android:cursorVisible="true"
+            android:gravity="top|start"
+            android:singleLine="false"
+            android:background="@null"
+            android:text=""
+            android:textSize="12dp"
+            android:inputType="text|textNoSuggestions|textMultiLine"
+            android:paddingLeft="30dp" />
+
+    </me.albertonicoletti.latex.VerticalScrollView>
+
+</LinearLayout>

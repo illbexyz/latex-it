@@ -1,0 +1,16 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="me.albertonicoletti.latex.MainActivity">
+
+    <item android:id="@+id/new_document_menu"
+          android:icon="@drawable/ic_action_new"
+          android:title="@string/new_document_title"
+          android:onClick="newDocumentClick"
+          android:showAsAction="ifRoom" />
+
+    <item android:id="@+id/action_settings"
+          android:title="@string/action_settings"
+          android:orderInCategory="100"
+          android:showAsAction="never" />
+</menu>

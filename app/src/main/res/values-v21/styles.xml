@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="AppTheme" parent="android:Theme.Material.Light.DarkActionBar">
+        <!-- Main theme colors -->
+        <!--   Primary color -->
+        <item name="android:colorPrimary">@color/primary</item>
+        <!--   Darker variant -->
+        <item name="android:colorPrimaryDark">@color/primary_dark</item>
+        <!--   Theme UI controls like checkboxes and text fields -->
+        <item name="android:colorAccent">@color/accent</item>
+        <!--   Navigation bar -->
+        <item name="android:navigationBarColor">@color/primary</item>
+    </style>
+</resources>
