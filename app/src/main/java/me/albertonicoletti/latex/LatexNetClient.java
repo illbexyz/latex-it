@@ -9,7 +9,7 @@ import com.loopj.android.http.RequestParams;
  */
 public class LatexNetClient  {
 
-    private static final String BASE_URL = "http://192.168.1.115:3000/";
+    private static final String BASE_URL = "http://192.168.1.106:8080/";
 
     private static AsyncHttpClient client = new AsyncHttpClient();
 

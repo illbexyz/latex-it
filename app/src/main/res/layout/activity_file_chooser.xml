@@ -1,0 +1,25 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="me.albertonicoletti.latex.FileChooserActivity">
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+
+        <include layout="@layout/file_type_row" />
+
+        <android.support.v7.widget.RecyclerView
+            android:id="@+id/file_chooser_files"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="@color/editor_text"
+            android:overScrollMode="never"
+            android:scrollbars="none"
+            android:layout_weight="1"/>
+
+    </LinearLayout>
+
+</RelativeLayout>

@@ -44,10 +44,9 @@ public class Editor extends EditText {
         lineCounterColumnMargin = lineCounterColumnWidth/6;
     }
 
-
     @Override
     protected void onDraw(@NonNull Canvas canvas) {
-        backgroundPainter.setColor(getResources().getColor(R.color.light_grey));
+        backgroundPainter.setColor(getResources().getColor(R.color.editor_column));
         // Draws a colored background to the line counter column
         canvas.drawRect(0, 0, lineCounterColumnWidth, this.getBottom(), backgroundPainter);
 
@@ -55,15 +54,43 @@ public class Editor extends EditText {
         // Draws a right-border to the line counter column
         canvas.drawLine(lineCounterColumnWidth, 0, lineCounterColumnWidth, getBottom(), backgroundPainter);
 
-        //TODO: linee finte newline
-        for(int i=0; i<getLineCount(); i++){
-            canvas.drawText(String.valueOf(i + 1),
-                    lineCounterColumnWidth - lineCounterColumnMargin,
-                    lineCountPaddingTop + ((i+1) * lineHeight),
-                    numberPainter);
+        // The number that will be drawn
+        int lineToDraw = 1;
+        // Set to true if a line hasn't got a newline character
+        boolean previousLineNoNewline = false;
+        // Will draw a number aside each line in the EditText
+        // The number won't be drawn if the previous line hasn't got a newline character
+        for (int i = 0; i < getLineCount(); i++) {
+            int currentLineStart = getLayout().getLineStart(i);
+            int currentLineEnd = getLayout().getLineEnd(i);
+            String currentLine = getText().subSequence(currentLineStart, currentLineEnd).toString();
+            boolean containsNewLine = currentLine.contains("\n");
+            // If the previous line contains a newline character the number it will draw the number
+            if (!previousLineNoNewline) {
+                canvas.drawText(String.valueOf(lineToDraw),
+                        lineCounterColumnWidth - lineCounterColumnMargin,
+                        lineCountPaddingTop + ((i+1) * lineHeight),
+                        numberPainter);
+                if (!containsNewLine) {
+                    previousLineNoNewline = true;
+                }
+                lineToDraw++;
+            // When it finds a line containing a newline charcater, the next line will be drawn
+            } else {
+                if (containsNewLine) {
+                    previousLineNoNewline = false;
+                }
+            }
         }
-
         super.onDraw(canvas);
+    }
+
+    /**
+     * Returns the String representation of the text
+     * @return the String representation of the text
+     */
+    public String getTextString(){
+        return this.getText().toString();
     }
 
 }

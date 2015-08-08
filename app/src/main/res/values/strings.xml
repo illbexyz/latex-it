@@ -6,12 +6,16 @@
     <string name="title_activity_main">MainActivity</string>
     <string name="new_document_title">New Document</string>
     <string name="generate_pdf">Generate PDF</string>
-    <string name="documnet_dialog_title">Document Options</string>
+    <string name="document_dialog_title">Document Options</string>
     <string name="rename_hint">Document Title</string>
     <string name="confirm">Confirm</string>
     <string name="cancel">Cancel</string>
-
-    <string name="cxc">ciao \n
-        vaffanculo</string>
+    <string name="documents">Documents</string>
+    <string name="save_document">Save Document</string>
+    <string name="title">Title</string>
+    <string name="modified">Modified:</string>
+    <string name="date">Date</string>
+    <string name="filetype">File type</string>
+    <string name="back">Back</string>
 
 </resources>

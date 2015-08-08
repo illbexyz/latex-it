@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+android:layout_width="match_parent"
+android:layout_height="40dp"
+android:focusable="true"
+android:focusableInTouchMode="true"
+android:orientation="horizontal">
+
+
+<Button
+    android:layout_width="wrap_content"
+    android:layout_height="match_parent"
+    android:text="+"
+    android:id="@+id/maths_button"
+    android:layout_gravity="center_vertical"
+    android:background="?android:attr/selectableItemBackground"
+    android:layout_weight="1" />
+
+<Button
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:text="%"
+    android:id="@+id/comment_button"
+    android:background="?android:attr/selectableItemBackground"
+    android:layout_weight="1"
+    android:onClick="onSymbolClick" />
+
+<Button
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:text="[]"
+    android:id="@+id/square_brackets_button"
+    android:background="?android:attr/selectableItemBackground"
+    android:layout_weight="1"
+    android:onClick="onSymbolClick" />
+
+<Button
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:text="{}"
+    android:id="@+id/curly_brackets_button"
+    android:background="?android:attr/selectableItemBackground"
+    android:layout_weight="1"
+    android:onClick="onSymbolClick"/>
+
+<Button
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:text="\\"
+    android:id="@+id/backslash_button"
+    android:background="?android:attr/selectableItemBackground"
+    android:layout_weight="1"
+    android:onClick="onSymbolClick" />
+
+</LinearLayout>

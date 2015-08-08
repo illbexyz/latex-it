@@ -45,7 +45,7 @@ public class DocumentDialog extends DialogFragment {
     public Dialog onCreateDialog(Bundle savedInstanceState) {
         this.filename = getArguments().getString("filename");
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
-        builder.setTitle(R.string.documnet_dialog_title)
+        builder.setTitle(R.string.document_dialog_title)
                 .setItems(R.array.document_dialog, new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int which) {
                         // The 'which' argument contains the index position

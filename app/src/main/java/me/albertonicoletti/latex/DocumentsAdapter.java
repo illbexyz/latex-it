@@ -4,45 +4,77 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
+import java.io.File;
+import java.text.SimpleDateFormat;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Adapter for the Documents RecyclerView
  */
-public class DocumentsAdapter extends RecyclerView.Adapter<DocumentsAdapter.DocumentViewHolder> {
+public class DocumentsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
-    private DocumentClickListener mListener;
+    public static final int DRAWER = 0;
+    public static final int FILE_CHOOSER = 1;
+
+    /** The object listening to the clicks */
     private DocumentClickListener clickListener;
-
     /** The dataset */
-    private List<Document> documentsList;
+    private List<File> documentsList;
+    /** View type (DRAWER or FILE_CHOOSER) */
+    private int viewType;
 
     /**
-     *
+     * Constructor
      * @param myDataset The documents list
-     * @param clickListener
+     * @param clickListener The object listening to the clicks
+     * @param viewType Set to DRAWER if the adapter is meant to be used in a drawer,
+     *                 Set to FILE_CHOOSER if in the file chooser activity.
+     *                 It will change the view type.
      */
-    public DocumentsAdapter(List<Document> myDataset, DocumentClickListener clickListener) {
+    public DocumentsAdapter(List<File> myDataset,
+                            DocumentClickListener clickListener,
+                            int viewType) {
         this.documentsList = myDataset;
         this.clickListener = clickListener;
+        this.viewType = viewType;
     }
 
     /**
-     * Class containing the document's visual representation
+     * Class containing the document's visual representation for the file manager
      */
-    public class DocumentViewHolder extends RecyclerView.ViewHolder{
+    public class DocumentViewHolder extends RecyclerView.ViewHolder {
 
         public TextView documentTitleView;
         public TextView documentLastModifiedView;
+        public ImageView fileTypeImage;
 
         public DocumentViewHolder(View view) {
             super(view);
             documentTitleView = (TextView) view.findViewById(R.id.documentTitle);
             documentLastModifiedView = (TextView) view.findViewById(R.id.last_modified_date);
+            fileTypeImage = (ImageView) view.findViewById(R.id.file_type_image);
             view.setOnClickListener(clickListener);
             view.setOnLongClickListener(clickListener);
+        }
+
+    }
+
+    /**
+     * Class containing the document's visual representation for the drawer list
+     */
+    public class DrawerDocumentViewHolder extends RecyclerView.ViewHolder {
+
+        public TextView documentTitleView;
+
+        public DrawerDocumentViewHolder(View view) {
+            super(view);
+            documentTitleView = (TextView) view.findViewById(R.id.drawer_document_name);
+            view.setOnClickListener(clickListener);
+            //view.setOnLongClickListener(clickListener);
         }
 
     }
@@ -51,7 +83,7 @@ public class DocumentsAdapter extends RecyclerView.Adapter<DocumentsAdapter.Docu
      * Refresh the RecyclerView's view.
      * @param documentsList New document's list
      */
-    public void refresh(List<Document> documentsList){
+    public void refresh(List<File> documentsList){
         this.documentsList = documentsList;
         this.notifyDataSetChanged();
     }
@@ -63,21 +95,45 @@ public class DocumentsAdapter extends RecyclerView.Adapter<DocumentsAdapter.Docu
      * @return
      */
     @Override
-    public DocumentViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        // create a new view
-        View view = LayoutInflater.from(parent.getContext())
-                .inflate(R.layout.document_row, parent, false);
-
-        DocumentViewHolder documentViewHolder = new DocumentViewHolder(view);
-        return documentViewHolder;
+    public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+        RecyclerView.ViewHolder viewHolder = null;
+        if(viewType == DocumentsAdapter.DRAWER){
+            View view = LayoutInflater.from(parent.getContext())
+                    .inflate(R.layout.drawer_list_item, parent, false);
+            viewHolder = new DrawerDocumentViewHolder(view);
+        } else {
+            View view = LayoutInflater.from(parent.getContext())
+                    .inflate(R.layout.document_row, parent, false);
+            viewHolder = new DocumentViewHolder(view);
+        }
+        return viewHolder;
     }
 
     @Override
-    public void onBindViewHolder(DocumentViewHolder holder, int position) {
+    public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
         // - get element from your dataset at this position
         // - replace the contents of the view with that element
-        holder.documentTitleView.setText(documentsList.get(position).getTitle());
-        holder.documentLastModifiedView.setText(documentsList.get(position).getLastModified());
+        if(viewType == DocumentsAdapter.DRAWER){
+            DrawerDocumentViewHolder drawerDocumentViewHolder = (DrawerDocumentViewHolder) holder;
+            drawerDocumentViewHolder.documentTitleView.setText(documentsList.get(position).getName());
+        } else {
+            DocumentViewHolder documentViewHolder = (DocumentViewHolder) holder;
+            documentViewHolder.documentTitleView.setText(documentsList.get(position).getName());
+            SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss", Locale.getDefault());
+            String lastModified = sdf.format(documentsList.get(position).lastModified());
+            documentViewHolder.documentLastModifiedView.setText(lastModified);
+            if(documentsList.get(position).isDirectory()){
+                documentViewHolder.fileTypeImage.setImageResource(R.drawable.open_document_image);
+            } else {
+                documentViewHolder.fileTypeImage.setImageResource(R.drawable.document_image);
+            }
+        }
+
+    }
+
+    @Override
+    public int getItemViewType(int position) {
+        return viewType;
     }
 
     @Override

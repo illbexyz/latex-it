@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="AppTheme" parent="android:Theme.Material.Light.DarkActionBar">
+    <style name="AppTheme" parent="android:Theme.Material">
         <!-- Main theme colors -->
         <!--   Primary color -->
         <item name="android:colorPrimary">@color/primary</item>
@@ -11,5 +11,6 @@
         <item name="android:colorAccent">@color/accent</item>
         <!--   Navigation bar -->
         <item name="android:navigationBarColor">@color/primary</item>
+        <item name="android:colorBackground">@color/black</item>
     </style>
 </resources>

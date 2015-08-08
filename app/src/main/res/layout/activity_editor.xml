@@ -1,33 +1,22 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
+<android.support.v4.widget.DrawerLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/drawer_layout"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    tools:context=".MainActivity"
-    android:focusable="true" android:focusableInTouchMode="true">
+    android:layout_height="match_parent">
 
-    <me.albertonicoletti.latex.VerticalScrollView
-        android:id="@+id/editor_scroll_view"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:scrollbars="vertical"
-        android:fillViewport="true"
-        android:background="@null">
+        android:focusable="true"
+        android:focusableInTouchMode="true"
+        android:orientation="vertical" >
 
-        <me.albertonicoletti.latex.Editor
-            android:id="@+id/editor"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:bufferType="spannable"
-            android:textCursorDrawable="@null"
-            android:cursorVisible="true"
-            android:gravity="top|start"
-            android:singleLine="false"
-            android:background="@null"
-            android:text=""
-            android:textSize="12dp"
-            android:inputType="text|textNoSuggestions|textMultiLine"
-            android:paddingLeft="30dp" />
+        <include layout="@layout/editor"/>
 
-    </me.albertonicoletti.latex.VerticalScrollView>
+        <include layout="@layout/editor_utility_bar"/>
 
-</LinearLayout>
+    </LinearLayout>
+
+    <include layout="@layout/editor_drawer"/>
+
+</android.support.v4.widget.DrawerLayout>

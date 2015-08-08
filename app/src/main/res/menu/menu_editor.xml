@@ -1,12 +1,17 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     tools:context="me.albertonicoletti.latex.EditorActivity">
 
+    <item android:id="@+id/save_open_document"
+        android:icon="@drawable/save_image"
+        android:title="@string/save_document"
+        android:onClick="onSaveOpenDocumentClick"
+        android:showAsAction="ifRoom" />
+
     <item android:id="@+id/new_document_menu"
-        android:icon="@drawable/ic_action_new"
+        android:icon="@drawable/ic_action_pdf"
         android:title="@string/generate_pdf"
-        android:onClick="generatePDF"
+        android:onClick="onPDFClick"
         android:showAsAction="ifRoom" />
 
     <item android:id="@+id/action_settings"

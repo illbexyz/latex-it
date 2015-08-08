@@ -11,21 +11,34 @@
     <item name="darkgreen" type="color">#FF669900</item>
     <item name="darkorange" type="color">#FFFF8800</item>
     <item name="darkred" type="color">#FFCC0000</item>
+    <item name="black" type="color">#161711</item>
 
     <item name="teal" type="color">#FF009688</item>
     <item name="darkteal" type="color">#FF004D40</item>
     <item name="lightteal" type="color">#FFB2DFDB</item>
     <item name="tealaccent" type="color">#FF1DE9B6</item>
 
+    <item name="blue_grey" type="color">#FF607D8B</item>
+    <item name="dark_blue_grey" type="color">#FF263238</item>
+    <item name="light_blue_grey" type="color">#FF78909C</item>
+    <item name="blue_grey_accent" type="color">#FFCFD8DC</item>
 
-    <item name="latex_keyword" type="color">#ffb59448</item>
-    <item name="latex_class" type="color">@color/darkgreen</item>
+    <item name="latex_keyword" type="color">#ffE6DB64</item>
+    <item name="latex_class" type="color">#66D9Ef</item>
     <item name="latex_third" type="color">#b53d3b</item>
 
+
+    <item name="primary" type="color">@color/blue_grey</item>
+    <item name="primary_dark" type="color">@color/dark_blue_grey</item>
+    <item name="accent" type="color">@color/blue_grey_accent</item>
+    <item name="primary_light" type="color">@color/light_blue_grey</item>
+
+    <!--
     <item name="primary" type="color">@color/teal</item>
     <item name="primary_dark" type="color">@color/darkteal</item>
     <item name="accent" type="color">@color/tealaccent</item>
     <item name="primary_light" type="color">@color/lightteal</item>
+    -->
 
     <item name="light_grey" type="color">#F3F3F3</item>
 
@@ -33,6 +46,10 @@
     <item name="text_grey" type="color">#989898</item>
 
     <item name="text" type="color">#343434</item>
+
+    <item name="editor_background" type="color">#1d1e17</item>
+    <item name="editor_column" type="color">@color/black</item>
+    <item name="editor_text" type="color">#F8F8F2</item>
 
     <integer-array name="androidcolors">
         <item>@color/blue</item>

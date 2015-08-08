@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_alignParentBottom="true" >
+
+    <LinearLayout
+        android:layout_width="120dp"
+        android:layout_height="50dp"
+        android:id="@+id/drawer_open_file"
+        android:background="?android:attr/selectableItemBackground"
+        android:clickable="true"
+        android:onClick="onOpenClick"
+        android:paddingLeft="18dp"
+        android:paddingRight="18dp" >
+
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/imageView2"
+            android:background="@drawable/open_document_image"
+            android:layout_gravity="center_vertical"
+            android:clickable="false" />
+
+        <Button
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:paddingLeft="3dp"
+            android:text="Open File"
+            android:background="@null"
+            android:textAllCaps="false"
+            android:gravity="center_vertical"
+            android:clickable="false"/>
+    </LinearLayout>
+    <LinearLayout
+        android:layout_width="120dp"
+        android:layout_height="50dp"
+        android:id="@+id/drawer_new_file"
+        android:layout_toRightOf="@id/drawer_open_file"
+        android:background="?android:attr/selectableItemBackground"
+        android:clickable="true"
+        android:onClick="onNewFileClick"
+        android:paddingLeft="18dp"
+        android:paddingRight="18dp">
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/new_document_image"
+            android:layout_gravity="center_vertical"
+            android:clickable="false" />
+        <Button
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:paddingLeft="3dp"
+            android:text="New File"
+            android:background="@null"
+            android:textAllCaps="false"
+            android:gravity="center_vertical"
+            android:clickable="false"/>
+    </LinearLayout>
+    <!--
+    <LinearLayout
+        android:layout_width="120dp"
+        android:layout_height="50dp"
+        android:id="@+id/drawer_about"
+        android:layout_below="@id/drawer_open_file"
+        android:background="?android:attr/selectableItemBackground"
+        android:clickable="true"
+        android:onClick="onOpenClick"
+        android:paddingLeft="18dp"
+        android:paddingRight="18dp">
+
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/imageView"
+            android:background="@drawable/about_image"
+            android:layout_gravity="center_vertical"
+            android:clickable="false"/>
+
+        <Button
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:paddingLeft="3dp"
+            android:text="About"
+            android:background="@null"
+            android:textAllCaps="false"
+            android:gravity="center_vertical"
+            android:clickable="false" />
+    </LinearLayout>
+    <LinearLayout
+        android:layout_width="120dp"
+        android:layout_height="50dp"
+        android:id="@+id/drawer_donate"
+        android:layout_toRightOf="@id/drawer_about"
+        android:layout_below="@id/drawer_new_file"
+        android:background="?android:attr/selectableItemBackground"
+        android:clickable="true"
+        android:paddingLeft="18dp"
+        android:paddingRight="18dp" >
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/donate_image"
+            android:layout_gravity="center_vertical"
+            android:clickable="false" />
+        <Button
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:paddingLeft="3dp"
+            android:text="Donate"
+            android:background="@null"
+            android:textAllCaps="false"
+            android:gravity="center_vertical"
+            android:clickable="false"/>
+    </LinearLayout>
+    -->
+</RelativeLayout>

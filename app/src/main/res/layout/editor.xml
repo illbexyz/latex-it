@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<me.albertonicoletti.latex.VerticalScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/editor_scroll_view"
+    android:layout_width="match_parent"
+    android:layout_height="0dp"
+    android:scrollbars="vertical"
+    android:fillViewport="true"
+    android:background="@null"
+    android:layout_weight="1">
+
+    <me.albertonicoletti.latex.Editor
+        android:id="@+id/editor"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:bufferType="spannable"
+        android:textCursorDrawable="@null"
+        android:cursorVisible="true"
+        android:gravity="start|top"
+        android:singleLine="false"
+        android:background="@color/editor_background"
+        android:textColor="@color/editor_text"
+        android:text=""
+        android:textSize="12dp"
+        android:inputType="text|textNoSuggestions|textMultiLine"
+        android:paddingLeft="30dp" />
+
+</me.albertonicoletti.latex.VerticalScrollView>

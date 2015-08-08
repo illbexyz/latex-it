@@ -17,7 +17,7 @@ import java.io.File;
 import java.util.LinkedList;
 
 
-public class MainActivity extends Activity
+public class FileChooserActivity extends Activity
         implements  DocumentDialog.DocumentDialogListener,
                     RenameDialog.RenameDialogListener,
                     DocumentClickListener.DocumentClickInterface {
@@ -26,17 +26,17 @@ public class MainActivity extends Activity
     private DocumentsAdapter documentsAdapter;
     private DocumentClickListener documentClickListener;
     private RecyclerView.LayoutManager documentsLayoutManager;
-    private FilesManager filesManager;
-    private LinkedList<Document> documents;
+    private LinkedList<File> directories;
+    private LinkedList<File> files;
+    private File currentDirectory;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-        filesManager = new FilesManager();
-        //documents = filesManager.getExistingFiles();
-
-        documentsListView = (RecyclerView) findViewById(R.id.documents_list);
+        setContentView(R.layout.activity_file_chooser);
+        currentDirectory = FilesManager.getDocumentsDir();
+        documentsListView = (RecyclerView) findViewById(R.id.file_chooser_files);
         // Every elements of the list will have a fixed size
         documentsListView.setHasFixedSize(true);
         // Sets the layout manager
@@ -44,28 +44,36 @@ public class MainActivity extends Activity
         documentsListView.setLayoutManager(documentsLayoutManager);
         // Sets an adapter
         documentClickListener = new DocumentClickListener(this);
-        documentsAdapter = new DocumentsAdapter(documents, documentClickListener);
+        documentsAdapter = new DocumentsAdapter(files, documentClickListener, DocumentsAdapter.FILE_CHOOSER);
         documentsListView.setAdapter(documentsAdapter);
+        setTitle("Choose a file");
     }
 
     @Override
     protected void onResume(){
         super.onResume();
-        this.refreshDocuments();
+        this.refreshDocuments(currentDirectory);
     }
 
     /**
      * Refresh the dataset and the view
      */
-    private void refreshDocuments() {
-        documents = filesManager.getExistingFiles();
-        documentsAdapter.refresh(documents);
+    private void refreshDocuments(File directory) {
+        this.currentDirectory = directory;
+        files = FilesManager.getExistingFiles(directory);
+        directories = FilesManager.getDirectories(directory);
+        directories.addAll(files);
+        documentsAdapter.refresh(directories);
+    }
+
+    private void parentDirectory(){
+        refreshDocuments(currentDirectory.getParentFile());
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
+        getMenuInflater().inflate(R.menu.menu_file_chooser, menu);
         return true;
     }
 
@@ -85,34 +93,6 @@ public class MainActivity extends Activity
     }
 
     /**
-     * On new document click (MenuBar)
-     * @param v
-     */
-    public void newDocumentClick(MenuItem v){
-        // Launch the editor creating a new file
-        this.launchEditor();
-    }
-
-    /**
-     * Creates a new file and launch the editor activity using the new file
-     */
-    private void launchEditor() {
-        File file = filesManager.newFile();
-        this.launchEditor(Uri.fromFile(file));
-    }
-
-    /**
-     * Starts the editor activity using an existing file
-     * @param fileUri File to open's uri
-     */
-    private void launchEditor(Uri fileUri){
-        Intent editorIntent = new Intent(this, EditorActivity.class);
-        editorIntent.setData(fileUri);
-        Log.v("NEW_ACTIVITY", "Starting editor activity with " + fileUri.toString());
-        startActivity(editorIntent);
-    }
-
-    /**
      * Triggered by selecting to rename a file
      * @param dialog
      * @param filename Filename to rename
@@ -129,15 +109,24 @@ public class MainActivity extends Activity
     /**
      * Triggered by confirming to rename a document
      * @param dialog
-     * @param oldFilename Old filename
+     * @param path File path
      * @param newFilename New filename
      */
     @Override
-    public void onRenameDialogConfirmClick(DialogFragment dialog, String oldFilename, String newFilename) {
+    public void onRenameDialogConfirmClick(DialogFragment dialog, String path, String newFilename) {
         // Rename the document
-        filesManager.renameDocument(oldFilename, newFilename);
+        FilesManager.renameFile(new File(path), newFilename);
         // Refresh the view
-        this.refreshDocuments();
+        this.refreshDocuments(currentDirectory);
+    }
+
+    @Override
+    public void onBackPressed() {
+        if(currentDirectory.getParentFile() != null) {
+            parentDirectory();
+        } else {
+            super.onBackPressed();
+        }
     }
 
     /**
@@ -147,9 +136,16 @@ public class MainActivity extends Activity
     @Override
     public void onDocumentClickListener(View v) {
         TextView m = (TextView) v.findViewById(R.id.documentTitle);
-        Uri uri = filesManager.getUriFromFilename(m.getText().toString());
-        //
-        launchEditor(uri);
+        Uri uri = FilesManager.getUriFromFilename(currentDirectory, m.getText().toString());
+        File file = new File(uri.getPath());
+        if(file.isDirectory()){
+            refreshDocuments(file);
+        } else {
+            Intent intent = new Intent();
+            intent.setData(uri);
+            setResult(1, intent);
+            finish();
+        }
     }
 
     /**
@@ -169,4 +165,7 @@ public class MainActivity extends Activity
         dialog.show(getFragmentManager(), "document_dialog");
     }
 
+    public void onBackClick(MenuItem item) {
+        parentDirectory();
+    }
 }

@@ -10,19 +10,21 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.EditText;
 
+import java.io.File;
+
 /**
  * Dialog showing an EditText for renaming a file.
  */
 public class RenameDialog extends DialogFragment {
 
     public interface RenameDialogListener {
-        void onRenameDialogConfirmClick(DialogFragment dialog, String oldFilename, String newFilename);
+        void onRenameDialogConfirmClick(DialogFragment dialog, String path, String newFilename);
     }
 
     /** Click listener */
     RenameDialogListener mListener;
-    /** Old filename */
-    String oldFilename;
+    /** File path */
+    String path;
 
     @Override
     public void onAttach(Activity activity) {
@@ -40,7 +42,7 @@ public class RenameDialog extends DialogFragment {
 
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
-        this.oldFilename = getArguments().getString("old_filename");
+        path = getArguments().getString("path");
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
         // Get the layout inflater
         LayoutInflater inflater = getActivity().getLayoutInflater();
@@ -55,7 +57,7 @@ public class RenameDialog extends DialogFragment {
                     public void onClick(DialogInterface dialog, int id) {
                         EditText editText = (EditText) view.findViewById(R.id.rename_document_title);
                         String newFilename = editText.getText().toString();
-                        mListener.onRenameDialogConfirmClick(RenameDialog.this, oldFilename, newFilename);
+                        mListener.onRenameDialogConfirmClick(RenameDialog.this, path, newFilename);
                     }
                 })
                 // On negative answer it will close the dialog

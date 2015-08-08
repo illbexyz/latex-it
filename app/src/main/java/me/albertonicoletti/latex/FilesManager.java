@@ -6,47 +6,58 @@ import android.util.Log;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.URI;
 import java.util.LinkedList;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 /**
  * Utility class that provide utilities for managing files.
  */
 public class FilesManager {
 
+    static int filesNumber = 0;
+
     /**
      * Convenient method to create a new Latex file and save it in Documents folder.
      * @return Latex file created
      */
-    public File newFile(){
-        File newDoc = null;
+    public static File newFile(){
+        /*File newDoc = null;
         Integer seedNumber = 0;
         // Checking if I can write on external storage
         Log.v("FILE", "Checking if I can write on external storage");
-        if(this.isExternalStorageWritable()){
+        if(isExternalStorageWritable()){
             File directoryPath = getDocumentsDir();
             String filename;
             // Incrementing seedNumber until there's no file having that name
             do{
                 filename = "untitled" + seedNumber + ".tex";
                 Log.v("FILE", "Trying to open " + filename + " file");
-                newDoc = new File(directoryPath, filename);
+                newDoc = new File(filename);
                 seedNumber++;
             } while(newDoc.exists());
 
-            newDoc = this.newFile(filename);
+            newDoc = newFile(filename);
 
         } else {
             Log.e("FILE", "Can't write on external storage");
         }
-        return newDoc;
+
+        return newDoc;*/
+        File file;
+        do {
+            file = new File(getDocumentsDir(), "untitled" + filesNumber++);
+        } while(file.exists());
+        return newFile(getDocumentsDir(), file.getName());
     }
 
     /**
@@ -54,27 +65,39 @@ public class FilesManager {
      * @param name Filename
      * @return File created
      */
-    public File newFile(String name){
+    public static File newFile(File directory, String name){
         File newDoc = null;
         // Checking if I can write on external storage
         Log.v("FILE", "Checking if I can write on external storage");
-        if(this.isExternalStorageWritable()){
+        if(isExternalStorageWritable()){
             File directoryPath = getDocumentsDir();
 
             Log.v("FILE", "Trying to open " + name + " file");
-            newDoc = new File(directoryPath, name);
+            newDoc = new File(name);
             Log.v("FILE", "Filename: " + name);
-            try {
-                if(!newDoc.createNewFile()){
-                    Log.e("FILE", "Can't create a new document.");
-                }
-            } catch (IOException e) {
-                Log.e("FILE", "Can't create a new document. " + e.getMessage());
-            }
         } else {
             Log.e("FILE", "Can't write on external storage");
         }
         return newDoc;
+    }
+
+    public static void saveFileOnDisk(File directory, File file){
+        File fileToSave = new File(directory, file.getName());
+        try {
+            if(!fileToSave.createNewFile()){
+                Log.e("FILE", "Can't create a new document.");
+            }
+        } catch (IOException e) {
+            Log.e("FILE", "Can't create a new document. " + e.getMessage());
+        }
+    }
+
+    /**
+     * Deletes a file
+     * @param file File to delete
+     */
+    public static void deleteFile(File file){
+        file.delete();
     }
 
     /**
@@ -82,10 +105,10 @@ public class FilesManager {
      * @param file File to read
      * @return Byte array
      */
-    byte[] readBinaryFile(File file){
+    public static byte[] readBinaryFile(File file){
         byte[] result = new byte[(int) file.length()];
         try {
-            InputStream input = null;
+            InputStream input;
             int totalBytesRead = 0;
             input = new BufferedInputStream(new FileInputStream(file));
             // Until it reads the whole file:
@@ -114,7 +137,7 @@ public class FilesManager {
      * @param bytes Bytes array
      * @param file File to write
      */
-    public void writeBinaryFile(byte[] bytes, File file){
+    public static void writeBinaryFile(File file, byte[] bytes){
         try {
             OutputStream output = new BufferedOutputStream(new FileOutputStream(file));
             // Writes the whole array into the file
@@ -129,32 +152,43 @@ public class FilesManager {
         }
     }
 
+    public static void writeFile(File file, String string){
+        try {
+            BufferedWriter writer = new BufferedWriter(new FileWriter(file));
+            writer.write(string, 0, string.length());
+            writer.flush();
+            writer.close();
+        } catch (IOException e) {
+            Log.e("FILE", "Can't write in the file: " + e.getMessage());
+        }
+    }
+
     /**
      * Renames the given filename to newName
-     * @param filename
+     * @param file
      * @param newName
      */
-    public void renameDocument(String filename, String newName){
+    public static File renameFile(File file, String newName){
         File directory = getDocumentsDir();
-        File file = new File(directory, filename);
         File newFile = new File(directory, newName);
         file.renameTo(newFile);
+        file = newFile;
+        return file;
     }
 
     /**
      * Gets the files in Documents folder
      * @return Files in Documents folder
      */
-    public LinkedList<Document> getExistingFiles(){
-        LinkedList<Document> filenames = new LinkedList<Document>();
+    public static LinkedList<File> getExistingFiles(){
+        LinkedList<File> filenames = new LinkedList<>();
         File directory = getDocumentsDir();
         File[] files = directory.listFiles();
         for(File file : files){
             if(file.isFile()){
                 String filename = file.getName();
                 if(filename.endsWith(".tex")){
-                    Document doc = new Document(file);
-                    filenames.add(doc);
+                    filenames.add(file);
                 }
             }
         }
@@ -162,10 +196,46 @@ public class FilesManager {
     }
 
     /**
+     * Gets the files in a given directory
+     * @param directory Directory
+     * @return Files in the directory
+     */
+    public static LinkedList<File> getExistingFiles(File directory){
+        LinkedList<File> filenames = new LinkedList<>();
+        File[] files = directory.listFiles();
+        for(File file : files){
+            if(file.isFile()){
+                String filename = file.getName();
+                if(filename.endsWith(".tex")){
+                    filenames.add(file);
+                }
+            }
+        }
+        return filenames;
+    }
+
+    /**
+     * Gets the directories
+     * @param directory Directory where to search
+     * @return Files in Documents folder
+     */
+    public static LinkedList<File> getDirectories(File directory){
+        LinkedList<File> directories = new LinkedList<>();
+        File[] files = directory.listFiles();
+        for(File file : files){
+            if(file.isDirectory()){
+                String filename = file.getName();
+                directories.add(file);
+            }
+        }
+        return directories;
+    }
+
+    /**
      * Gets the default document's directory
      * @return Default document's directory
      */
-    public File getDocumentsDir() {
+    public static File getDocumentsDir() {
         // Get the directory for the user's public pictures directory.
         File directory = Environment.getExternalStoragePublicDirectory(
                 Environment.DIRECTORY_DOCUMENTS);
@@ -180,7 +250,7 @@ public class FilesManager {
      * @param filename Filename
      * @return URI
      */
-    public Uri getUriFromFilename(String filename){
+    public static Uri getUriFromFilename(String filename){
         Uri fileUri;
         File directory = getDocumentsDir();
         File file = new File(directory, filename);
@@ -193,7 +263,7 @@ public class FilesManager {
      * @param filename Filename
      * @return URI
      */
-    public Uri getUriFromFilename(File directory, String filename){
+    public static Uri getUriFromFilename(File directory, String filename){
         Uri fileUri;
         File file = new File(directory, filename);
         fileUri = Uri.fromFile(file);
@@ -201,28 +271,59 @@ public class FilesManager {
     }
 
     /**
+     *
+     * @param files
+     * @return
+     */
+    public static File zipFiles(LinkedList<File> files){
+        final int BUFFER = 2048;
+        File zip = new File(getDocumentsDir(), "zip.zip");
+        try {
+            BufferedInputStream origin = null;
+            FileOutputStream dest = new FileOutputStream(zip);
+
+            ZipOutputStream out = new ZipOutputStream(new BufferedOutputStream(dest));
+
+            byte data[] = new byte[BUFFER];
+
+            for(File f : files){
+                Log.v("Compress", "Adding: " + f);
+                FileInputStream fi = new FileInputStream(f);
+                origin = new BufferedInputStream(fi, BUFFER);
+                ZipEntry entry = new ZipEntry(f.getPath().substring(f.getPath().lastIndexOf("/") + 1));
+                out.putNextEntry(entry);
+                int count;
+                while ((count = origin.read(data, 0, BUFFER)) != -1) {
+                    out.write(data, 0, count);
+                }
+                origin.close();
+            }
+
+            out.close();
+        } catch(Exception e) {
+            e.printStackTrace();
+        }
+        return zip;
+
+    }
+
+    /**
      * Checks if external storage is available for read and write
      * @return True if writable
      */
-    public boolean isExternalStorageWritable() {
+    public static boolean isExternalStorageWritable() {
         String state = Environment.getExternalStorageState();
-        if (Environment.MEDIA_MOUNTED.equals(state)) {
-            return true;
-        }
-        return false;
+        return Environment.MEDIA_MOUNTED.equals(state);
     }
 
     /**
      * Checks if external storage is available to at least read
      * @return True if readable
      */
-    public boolean isExternalStorageReadable() {
+    public static boolean isExternalStorageReadable() {
         String state = Environment.getExternalStorageState();
-        if (Environment.MEDIA_MOUNTED.equals(state) ||
-                Environment.MEDIA_MOUNTED_READ_ONLY.equals(state)) {
-            return true;
-        }
-        return false;
+        return Environment.MEDIA_MOUNTED.equals(state) ||
+                Environment.MEDIA_MOUNTED_READ_ONLY.equals(state);
     }
 
 }
