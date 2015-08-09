@@ -1,18 +1,17 @@
 package me.albertonicoletti.latex;
 
 import android.content.Context;
-import android.os.Handler;
 import android.util.AttributeSet;
-import android.view.View;
 import android.widget.ScrollView;
 
 import java.lang.reflect.Field;
 
 /**
- * Created by Alberto on 31/07/2015.
+ * Custom ScrollView primarily used to detect when the scroll view "finishes to scroll"
  */
 public class VerticalScrollView extends ScrollView {
 
+    /** How much time passes from stop detection */
     private static final int DELAY = 250;
 
     private ScrollStoppedListener mScrollStoppedListener;
@@ -38,6 +37,7 @@ public class VerticalScrollView extends ScrollView {
 
     };
 
+    // Constructors: they always call init()
     public VerticalScrollView(Context context) {
         super(context);
         init();
@@ -61,10 +61,17 @@ public class VerticalScrollView extends ScrollView {
         }
     }
 
+    /**
+     * Sets a listener for the stop event
+     * @param listener Listener
+     */
     public void setScrollStoppedListener(ScrollStoppedListener listener) {
         mScrollStoppedListener = listener;
     }
 
+    /**
+     * Initialize the ScrollView
+     */
     private void init() {
         try {
             // Get the OverScroller field from the ScrollView class.

@@ -24,7 +24,7 @@ import java.util.zip.ZipOutputStream;
 /**
  * Utility class that provide utilities for managing files.
  */
-public class FilesManager {
+public class FilesUtils {
 
     static int filesNumber = 0;
 

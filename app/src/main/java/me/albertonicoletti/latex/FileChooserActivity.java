@@ -34,7 +34,7 @@ public class FileChooserActivity extends Activity
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_file_chooser);
-        currentDirectory = FilesManager.getDocumentsDir();
+        currentDirectory = FilesUtils.getDocumentsDir();
         documentsListView = (RecyclerView) findViewById(R.id.file_chooser_files);
         // Every elements of the list will have a fixed size
         documentsListView.setHasFixedSize(true);
@@ -59,8 +59,8 @@ public class FileChooserActivity extends Activity
      */
     private void refreshDocuments(File directory) {
         this.currentDirectory = directory;
-        files = FilesManager.getExistingFiles(directory);
-        directories = FilesManager.getDirectories(directory);
+        files = FilesUtils.getExistingFiles(directory);
+        directories = FilesUtils.getDirectories(directory);
         directories.addAll(files);
         documentsAdapter.refresh(directories);
     }
@@ -119,7 +119,7 @@ public class FileChooserActivity extends Activity
     @Override
     public void onRenameDialogConfirmClick(DialogFragment dialog, String path, String newFilename) {
         // Rename the document
-        FilesManager.renameFile(new File(path), newFilename);
+        FilesUtils.renameFile(new File(path), newFilename);
         // Refresh the view
         this.refreshDocuments(currentDirectory);
     }
@@ -140,7 +140,7 @@ public class FileChooserActivity extends Activity
     @Override
     public void onDocumentClickListener(View v) {
         TextView m = (TextView) v.findViewById(R.id.documentTitle);
-        Uri uri = FilesManager.getUriFromFilename(currentDirectory, m.getText().toString());
+        Uri uri = FilesUtils.getUriFromFilename(currentDirectory, m.getText().toString());
         File file = new File(uri.getPath());
         if(file.isDirectory()){
             refreshDocuments(file);

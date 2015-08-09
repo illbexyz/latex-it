@@ -1,7 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
-    <EditTextPreference
-        android:key="image_folder"
-        android:title="Image Folder"
-        android:defaultValue=""/>
+    <PreferenceCategory
+        android:key="image_category"
+        android:title="Directories">
+        <EditTextPreference
+            android:key="images_folder"
+            android:title="Images Folder"
+            android:defaultValue=""/>
+        <EditTextPreference
+            android:key="output_folder"
+            android:title="Output PDF Folder"
+            android:defaultValue=""/>
+    </PreferenceCategory>
+    <PreferenceCategory>
+
+    </PreferenceCategory>
 </PreferenceScreen>

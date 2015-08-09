@@ -5,9 +5,11 @@ import android.app.AlertDialog;
 import android.app.DialogFragment;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Point;
 import android.net.Uri;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -89,7 +91,7 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
             documents = DataPersistenceUtil.readSavedOpenFiles(getApplicationContext());
             if(documents.isEmpty()) {
                 // If there's no open document it opens a new untitled file
-                document = FilesManager.newFile();
+                document = FilesUtils.newFile();
             } else {
                 // Else it gets the first open document
                 document = documents.get(0);
@@ -168,7 +170,7 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
 
     private void openDocumentInEditor(File document){
         this.document = document;
-        String fileContent = FilesManager.readTextFile(document);
+        String fileContent = FilesUtils.readTextFile(document);
 
         if(!documents.contains(document)){
             documents.add(document);
@@ -216,7 +218,7 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
      * Routine to save a specific document
      */
     private void saveFile(File document){
-        FilesManager.writeFile(document, editor.getTextString());
+        FilesUtils.writeFile(document, editor.getTextString());
         textModified = false;
     }
 
@@ -229,8 +231,9 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
     }
 
     private void generatePDF(){
-        File zip = FilesManager.zipFiles(documents);
-        FilesManager.saveFileOnDisk(zip.getParentFile(), zip);
+        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
+        String defaultOutput = sharedPref.getString(SettingsActivity.OUTPUT_FOLDER, "");
+
         /*
         RequestParams params = new RequestParams();
         params.put("file", editor.getTextString());
@@ -244,10 +247,10 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
             @Override
             public void onSuccess(int i, Header[] headers, File file) {
 
-                byte[] bytes = FilesManager.readBinaryFile(file);
+                byte[] bytes = FilesUtils.readBinaryFile(file);
 
-                File pdf = FilesManager.newFile("nuovo.pdf");
-                FilesManager.writeBinaryFile(pdf, bytes);
+                File pdf = FilesUtils.newFile("nuovo.pdf");
+                FilesUtils.writeBinaryFile(pdf, bytes);
 
                 Intent pdfIntent = new Intent();
                 pdfIntent.setAction(Intent.ACTION_VIEW);
@@ -258,10 +261,6 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
                 }
             }
         });*/
-    }
-
-    public void onPDFClick(MenuItem item) {
-        this.generatePDF();
     }
 
     public void onOpenClick(View view) {
@@ -302,14 +301,18 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
 
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
+        switch (id){
+            case R.id.action_settings:
+                startActivity(new Intent(this, SettingsActivity.class));
+                break;
+            case R.id.action_save:
+                saveCurrentDocument();
+                break;
+            case R.id.action_pdf:
+                generatePDF();
+                break;
         }
 
         return super.onOptionsItemSelected(item);
@@ -337,11 +340,11 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
     }
 
     public void onNewFileClick(View view) {
-        File file = FilesManager.newFile();
+        File file = FilesUtils.newFile();
         openDocumentInEditor(file);
     }
 
-    public void onSaveOpenDocumentClick(MenuItem item) {
+    private void saveCurrentDocument(){
         if(!document.exists()){
             DialogsUtil.showRenameDialog(this, document);
         } else {
@@ -354,9 +357,9 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
         // Recreate the document
         File newDocument = new File(path);
         // Save it on disk
-        FilesManager.saveFileOnDisk(newDocument.getParentFile(), newDocument);
+        FilesUtils.saveFileOnDisk(newDocument.getParentFile(), newDocument);
         // Recreate it to change the name (the file won't change his name otherwise)
-        newDocument = new File(FilesManager.renameFile(newDocument, newFilename).getPath());
+        newDocument = new File(FilesUtils.renameFile(newDocument, newFilename).getPath());
         // Remove the old document from the dataset and insert the new one in the same position
         int oldDocumentIndex = documents.indexOf(this.document);
         documents.remove(this.document);
@@ -374,7 +377,7 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
             if(documents.size() > 0){
                 document = documents.get(0);
             } else {
-                document = FilesManager.newFile();
+                document = FilesUtils.newFile();
             }
         }
         refreshTitleAndDrawer();

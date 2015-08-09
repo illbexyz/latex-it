@@ -27,14 +27,14 @@ public class DataPersistenceUtil {
     }
 
     public static void saveFilesPath(Context context, LinkedList<File> files){
-        FilesManager.deleteInternalFiles(context);
+        FilesUtils.deleteInternalFiles(context);
         File persistentFile = new File(context.getFilesDir(), "open_documents");
         String filepaths = "";
         for (File f : files) {
             String path = f.getPath();
             filepaths += path + "\n";
         }
-        FilesManager.writeFile(persistentFile, filepaths);
+        FilesUtils.writeFile(persistentFile, filepaths);
     }
 
 }
