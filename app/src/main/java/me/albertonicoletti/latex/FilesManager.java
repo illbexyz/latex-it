@@ -1,5 +1,6 @@
 package me.albertonicoletti.latex;
 
+import android.content.Context;
 import android.net.Uri;
 import android.os.Environment;
 import android.util.Log;
@@ -16,6 +17,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.LinkedList;
+import java.util.Scanner;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -81,6 +83,17 @@ public class FilesManager {
         return newDoc;
     }
 
+    public static File getFileInternalMemory(Context context, String filename){
+        File internalFile = new File(context.getFilesDir(), filename);
+        return internalFile;
+    }
+
+    public static void saveFileInternalMemory(Context context, File file){
+        File internalFile = new File(context.getFilesDir(), file.getName());
+        String toSave = readTextFile(file);
+        writeFile(internalFile, toSave);
+    }
+
     public static void saveFileOnDisk(File directory, File file){
         File fileToSave = new File(directory, file.getName());
         try {
@@ -98,6 +111,31 @@ public class FilesManager {
      */
     public static void deleteFile(File file){
         file.delete();
+    }
+
+    public static void deleteFileInDirectory(File directory){
+        File[] files = directory.listFiles();
+        for(File f : files){
+            deleteFile(f);
+        }
+    }
+
+    public static void deleteInternalFiles(Context context){
+        deleteFileInDirectory(context.getFilesDir());
+    }
+
+    public static String readTextFile(File file){
+        String fileContent = "";
+        Log.v("FILE", "Trying to read file: " + file.getPath());
+        try {
+            Scanner s = new Scanner(file);
+            while(s.hasNextLine()){
+                fileContent += s.nextLine() + "\n";
+            }
+        } catch (FileNotFoundException e) {
+            Log.e("FILE", "Can't read file: " + e.getMessage());
+        }
+        return fileContent;
     }
 
     /**

@@ -13,14 +13,15 @@ import android.os.Bundle;
 public class DocumentDialog extends DialogFragment {
 
     public interface DocumentDialogListener {
-        void onDialogRenameClick(DialogFragment dialog, String filename);
+        void onDialogDeleteClick(DialogFragment dialog, String path);
+        void onDialogRenameClick(DialogFragment dialog, String path);
     }
 
     /** Object listening to the dialog's events */
     DocumentDialogListener mListener;
 
     /** Document's filename */
-    String filename;
+    String path;
 
     @Override
     public void onAttach(Activity activity) {
@@ -31,7 +32,7 @@ public class DocumentDialog extends DialogFragment {
         } catch (ClassCastException e) {
             // The activity doesn't implement the interface, throw exception
             throw new ClassCastException(activity.toString()
-                    + " must implement NoticeDialogListener");
+                    + " must implement DocumentDialogListener");
         }
         super.onAttach(activity);
     }
@@ -43,7 +44,7 @@ public class DocumentDialog extends DialogFragment {
      */
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
-        this.filename = getArguments().getString("filename");
+        path = getArguments().getString("filepath");
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
         builder.setTitle(R.string.document_dialog_title)
                 .setItems(R.array.document_dialog, new DialogInterface.OnClickListener() {
@@ -52,7 +53,9 @@ public class DocumentDialog extends DialogFragment {
                         // of the selected item
                         switch(which) {
                             case 0:
-                                mListener.onDialogRenameClick(DocumentDialog.this, filename);
+                                mListener.onDialogRenameClick(DocumentDialog.this, path);
+                            case 1:
+                                mListener.onDialogDeleteClick(DocumentDialog.this, path);
                         }
                     }
                 });

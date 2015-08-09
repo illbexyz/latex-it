@@ -17,5 +17,6 @@
 <resources>
     <string-array name="document_dialog">
         <item>Rename</item>
+        <item>Delete</item>
     </string-array>
 </resources>

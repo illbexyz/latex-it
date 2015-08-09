@@ -12,10 +12,8 @@ import android.support.v4.widget.DrawerLayout;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.Editable;
-import android.text.Spannable;
 import android.text.TextWatcher;
 import android.text.method.ScrollingMovementMethod;
-import android.text.style.ForegroundColorSpan;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.Menu;
@@ -26,21 +24,12 @@ import android.widget.PopupMenu;
 import android.widget.TextView;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.util.LinkedList;
-import java.util.List;
-import java.util.Scanner;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 
 public class EditorActivity extends Activity implements DocumentClickListener.DocumentClickInterface,
-                                                        RenameDialog.RenameDialogListener{
-
-    public final Pattern commandsPattern = Pattern.compile("([\\\\])\\w+(\\*)*", Pattern.MULTILINE);
-    public final Pattern keywordsPattern = Pattern.compile("([{]).+([}])", Pattern.MULTILINE);
-    public final Pattern thirdPattern = Pattern.compile("([\\[]).+([\\]])", Pattern.MULTILINE);
-    public final Pattern commentsPattern = Pattern.compile("(%).*$", Pattern.MULTILINE);
+                                                        RenameDialog.RenameDialogListener,
+                                                        DocumentDialog.DocumentDialogListener {
 
     /** Left Drawer Layout */
     private DrawerLayout mDrawerLayout;
@@ -56,11 +45,14 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
     private VerticalScrollView scrollView;
     /** List of the open documents */
     private LinkedList<File> documents = new LinkedList<>();
+    /** List of the images */
+    //private LinkedList<LinkedList<File>> images = new LinkedList<>();
     /** The document the editor is showing */
     private File document;
 
     /** Set to true if the text has been modified and not saved */
     private boolean textModified = false;
+
     private boolean initialized = false;
 
     @Override
@@ -89,12 +81,22 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
         });
 
         Uri fileUri = getIntent().getData();
-        if(fileUri == null) {
-            fileUri = Uri.fromFile(FilesManager.newFile());
+        // If a URI is passed
+        if (fileUri != null) {
+            document = new File(fileUri.getPath());
+        } else {
+            // No URI is passed
+            documents = DataPersistenceUtil.readSavedOpenFiles(getApplicationContext());
+            if(documents.isEmpty()) {
+                // If there's no open document it opens a new untitled file
+                document = FilesManager.newFile();
+            } else {
+                // Else it gets the first open document
+                document = documents.get(0);
+            }
         }
-        document = new File(fileUri.getPath());
+
         openDocumentInEditor(document);
-        initialized = true;
     }
 
     private void initDrawer(){
@@ -113,15 +115,16 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
 
     private void initEditor(){
         scrollView = (VerticalScrollView) findViewById(R.id.editor_scroll_view);
+        editor = (Editor) findViewById(R.id.editor);
+
+        editor.setVerticalScrollBarEnabled(true);
+        editor.setMovementMethod(new ScrollingMovementMethod());
         scrollView.setScrollStoppedListener(new VerticalScrollView.ScrollStoppedListener() {
             @Override
             public void onStopped() {
-                highlightText(editor.getText());
+                highlightEditor();
             }
         });
-        editor = (Editor) findViewById(R.id.editor);
-        editor.setVerticalScrollBarEnabled(true);
-        editor.setMovementMethod(new ScrollingMovementMethod());
         editor.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -134,31 +137,38 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
             @Override
             public void afterTextChanged(Editable s) {
                 if (initialized) {
-                    highlightText(s);
+                    highlightEditor();
                     textModified = true;
                 }
             }
         });
+        initialized = true;
     }
 
-    private void changeFile(String filename){
-        File dir = FilesManager.getDocumentsDir();
-        File file = new File(dir, filename);
+    @Override
+    protected void onStop() {
+        DataPersistenceUtil.saveFilesPath(getApplicationContext(), documents);
+        super.onStop();
+    }
+
+    private void highlightEditor(){
+        int scrollY = scrollView.getScrollY();
+        if (scrollY == -1) scrollY = 0;
+        Point size = new Point();
+        getWindowManager().getDefaultDisplay().getSize(size);
+        int start = Math.max(0, editor.getOffsetForPosition(0, scrollY));
+        int end = Math.max(0, editor.getOffsetForPosition(size.x, scrollY + size.y));
+        editor.highlightText(start, end);
+    }
+
+    private void changeFile(String path){
+        File file = new File(path);
         openDocumentInEditor(file);
     }
 
     private void openDocumentInEditor(File document){
         this.document = document;
-        String fileContent = "";
-        Log.v("FILE", "Trying to read file: " + document.getPath());
-        try {
-            Scanner s = new Scanner(document);
-            while(s.hasNextLine()){
-                fileContent += s.nextLine() + "\n";
-            }
-        } catch (FileNotFoundException e) {
-            Log.e("FILE", "Can't read file: " + e.getMessage());
-        }
+        String fileContent = FilesManager.readTextFile(document);
 
         if(!documents.contains(document)){
             documents.add(document);
@@ -198,51 +208,9 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
     @Override
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
-        highlightText(editor.getText());
+        highlightEditor();
     }
 
-
-    public void highlightText(Editable editable){
-
-        clearSpans(editable);
-
-        int scrollY = scrollView.getScrollY();
-        if(scrollY == -1) scrollY = 0;
-        Point size = new Point();
-        getWindowManager().getDefaultDisplay().getSize(size);
-        int start = Math.max(0, editor.getOffsetForPosition(0, scrollY));
-        int end = Math.max(0, editor.getOffsetForPosition(size.x, scrollY + size.y));
-        CharSequence s = editor.getText().subSequence(start, end);
-
-        Matcher matcher = keywordsPattern.matcher(s);
-        while (matcher.find()) {
-            editable.setSpan(new ForegroundColorSpan(getResources()
-                            .getColor(R.color.latex_class)),
-                    start + matcher.start(), start + matcher.end(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-        }
-
-        matcher = commandsPattern.matcher(s);
-        while (matcher.find()) {
-            editable.setSpan(new ForegroundColorSpan(getResources()
-                            .getColor(R.color.latex_keyword)),
-                    start + matcher.start(), start + matcher.end(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-        }
-
-        matcher = thirdPattern.matcher(s);
-        while (matcher.find()) {
-            editable.setSpan(new ForegroundColorSpan(getResources()
-                            .getColor(R.color.latex_third)),
-                    start + matcher.start(), start + matcher.end(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-        }
-
-        matcher = commentsPattern.matcher(s);
-        while (matcher.find()) {
-            editable.setSpan(new ForegroundColorSpan(getResources()
-                            .getColor(R.color.text_grey)),
-                    start + matcher.start(), start + matcher.end(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-        }
-
-    }
 
     /**
      * Routine to save a specific document
@@ -258,32 +226,6 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
     private void refreshTitleAndDrawer() {
         setTitle(this.document.getName());
         documentsAdapter.refresh(documents);
-    }
-
-    /**
-     * Routine to remove the colored spans.
-     * @param e Editable string
-     */
-    private void clearSpans( Editable e ){
-        // remove foreground color spans
-        ForegroundColorSpan spans[] = e.getSpans(
-                0,
-                e.length(),
-                ForegroundColorSpan.class );
-
-        for( int n = spans.length; n-- > 0; )
-            e.removeSpan( spans[n] );
-
-        // remove background color spans
-        /*
-        BackgroundColorSpan spans[] = e.getSpans(
-                0,
-                e.length(),
-                BackgroundColorSpan.class );
-
-        for( int n = spans.length; n-- > 0; )
-            e.removeSpan( spans[n] );
-        */
     }
 
     private void generatePDF(){
@@ -323,7 +265,10 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
     }
 
     public void onOpenClick(View view) {
-        Intent intent = new Intent(this, FileChooserActivity.class);
+        //Intent intent = new Intent(this, FileChooserActivity.class);
+        //startActivityForResult(intent, 1);
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        intent.setType("file/*");
         startActivityForResult(intent, 1);
     }
 
@@ -372,15 +317,23 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
 
     @Override
     public void onDocumentClickListener(View v) {
-        TextView textView = (TextView) v.findViewById(R.id.drawer_document_name);
-        String filename = textView.getText().toString();
-        changeFile(filename);
+        TextView textView = (TextView) v.findViewById(R.id.drawer_file_path);
+        String filePath = textView.getText().toString();
+        changeFile(filePath);
         mDrawerLayout.closeDrawer(Gravity.LEFT);
     }
 
     @Override
     public void onDocumentLongClickListener(View v) {
-
+        TextView m = (TextView) v.findViewById(R.id.drawer_file_path);
+        Bundle args = new Bundle();
+        // Adds a "filename" parameter containing the filename
+        args.putString("filepath", m.getText().toString());
+        // Creates the dialog and adds the parameter
+        DialogFragment dialog = new DocumentDialog();
+        dialog.setArguments(args);
+        // Opens thee dialog
+        dialog.show(getFragmentManager(), "document_dialog");
     }
 
     public void onNewFileClick(View view) {
@@ -413,4 +366,22 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
         refreshTitleAndDrawer();
     }
 
+    @Override
+    public void onDialogDeleteClick(DialogFragment dialog, String path) {
+        File file = new File(path);
+        documents.remove(file);
+        if(file == document){
+            if(documents.size() > 0){
+                document = documents.get(0);
+            } else {
+                document = FilesManager.newFile();
+            }
+        }
+        refreshTitleAndDrawer();
+    }
+
+    @Override
+    public void onDialogRenameClick(DialogFragment dialog, String filename) {
+
+    }
 }

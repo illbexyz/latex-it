@@ -4,15 +4,26 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.support.annotation.NonNull;
+import android.text.Editable;
+import android.text.Spannable;
 import android.text.TextPaint;
+import android.text.style.ForegroundColorSpan;
 import android.util.AttributeSet;
 import android.widget.EditText;
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * The editor, an EditText with extended functionality:
  * - Line count
  */
 public class Editor extends EditText {
+
+    public final Pattern commandsPattern = Pattern.compile("([\\\\])\\w+(\\*)*", Pattern.MULTILINE);
+    public final Pattern keywordsPattern = Pattern.compile("([{]).+([}])", Pattern.MULTILINE);
+    public final Pattern thirdPattern = Pattern.compile("([\\[]).+([\\]])", Pattern.MULTILINE);
+    public final Pattern commentsPattern = Pattern.compile("(%).*$", Pattern.MULTILINE);
 
     /** Painter used to draw numbers */
     private static final TextPaint numberPainter = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
@@ -42,6 +53,42 @@ public class Editor extends EditText {
         // The column width is given by the total padding left less the margin before text
         lineCounterColumnWidth =  getPaddingLeft() - marginBeforeText;
         lineCounterColumnMargin = lineCounterColumnWidth/6;
+    }
+
+    public void highlightText(int start, int end){
+        Editable editable = getText();
+        clearSpans(editable);
+
+        CharSequence s = getText().subSequence(start, end);
+
+        Matcher matcher = keywordsPattern.matcher(s);
+        while (matcher.find()) {
+            editable.setSpan(new ForegroundColorSpan(getResources()
+                            .getColor(R.color.latex_class)),
+                    start + matcher.start(), start + matcher.end(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+
+        matcher = commandsPattern.matcher(s);
+        while (matcher.find()) {
+            editable.setSpan(new ForegroundColorSpan(getResources()
+                            .getColor(R.color.latex_keyword)),
+                    start + matcher.start(), start + matcher.end(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+
+        matcher = thirdPattern.matcher(s);
+        while (matcher.find()) {
+            editable.setSpan(new ForegroundColorSpan(getResources()
+                            .getColor(R.color.latex_third)),
+                    start + matcher.start(), start + matcher.end(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+
+        matcher = commentsPattern.matcher(s);
+        while (matcher.find()) {
+            editable.setSpan(new ForegroundColorSpan(getResources()
+                            .getColor(R.color.text_grey)),
+                    start + matcher.start(), start + matcher.end(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+
     }
 
     @Override
@@ -83,6 +130,32 @@ public class Editor extends EditText {
             }
         }
         super.onDraw(canvas);
+    }
+
+    /**
+     * Routine to remove the colored spans.
+     * @param e Editable string
+     */
+    private void clearSpans( Editable e ){
+        // remove foreground color spans
+        ForegroundColorSpan spans[] = e.getSpans(
+                0,
+                e.length(),
+                ForegroundColorSpan.class );
+
+        for( int n = spans.length; n-- > 0; )
+            e.removeSpan( spans[n] );
+
+        // remove background color spans
+        /*
+        BackgroundColorSpan spans[] = e.getSpans(
+                0,
+                e.length(),
+                BackgroundColorSpan.class );
+
+        for( int n = spans.length; n-- > 0; )
+            e.removeSpan( spans[n] );
+        */
     }
 
     /**

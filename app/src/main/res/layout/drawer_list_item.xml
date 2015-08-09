@@ -31,6 +31,12 @@
             android:layout_gravity="center_vertical" />
     </LinearLayout>
 
+    <TextView
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:id="@+id/drawer_file_path"
+        android:enabled="false" />
+
     <View
         android:layout_width="fill_parent"
         android:layout_height="1dp"

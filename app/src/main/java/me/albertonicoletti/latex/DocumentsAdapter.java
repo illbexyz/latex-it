@@ -69,12 +69,14 @@ public class DocumentsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
     public class DrawerDocumentViewHolder extends RecyclerView.ViewHolder {
 
         public TextView documentTitleView;
+        public TextView documentPath;
 
         public DrawerDocumentViewHolder(View view) {
             super(view);
             documentTitleView = (TextView) view.findViewById(R.id.drawer_document_name);
+            documentPath = (TextView) view.findViewById(R.id.drawer_file_path);
             view.setOnClickListener(clickListener);
-            //view.setOnLongClickListener(clickListener);
+            view.setOnLongClickListener(clickListener);
         }
 
     }
@@ -116,6 +118,7 @@ public class DocumentsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
         if(viewType == DocumentsAdapter.DRAWER){
             DrawerDocumentViewHolder drawerDocumentViewHolder = (DrawerDocumentViewHolder) holder;
             drawerDocumentViewHolder.documentTitleView.setText(documentsList.get(position).getName());
+            drawerDocumentViewHolder.documentPath.setText(documentsList.get(position).getPath());
         } else {
             DocumentViewHolder documentViewHolder = (DocumentViewHolder) holder;
             documentViewHolder.documentTitleView.setText(documentsList.get(position).getName());
