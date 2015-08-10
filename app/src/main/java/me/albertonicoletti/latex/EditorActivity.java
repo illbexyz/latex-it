@@ -24,8 +24,15 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.PopupMenu;
 import android.widget.TextView;
+import android.widget.Toast;
+
+import com.loopj.android.http.FileAsyncHttpResponseHandler;
+import com.loopj.android.http.RequestParams;
+
+import org.apache.http.Header;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.util.LinkedList;
 
 
@@ -42,7 +49,7 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
     /** Adapter for the Recycler View */
     private DocumentsAdapter documentsAdapter;
     /** A custom EditText */
-    private Editor editor;
+    private LatexEditor editor;
     /** A custom scrollView, used to intercept when a scroll is stopped */
     private VerticalScrollView scrollView;
     /** List of the open documents */
@@ -62,6 +69,7 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_editor);
         Log.v("ACTIVITY", "Editor activity started");
+        initPreferences();
         initDrawer();
         initEditor();
 
@@ -101,6 +109,23 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
         openDocumentInEditor(document);
     }
 
+    private void initPreferences(){
+        String outputPath = FilesUtils.getDocumentsDir().getPath() + "/LatexOutput/";
+        String imagesPath = FilesUtils.getDocumentsDir().getPath() + "/Images/";
+
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        SharedPreferences.Editor prefsEdit = prefs.edit();
+        String currentOutputFolder = prefs.getString(SettingsActivity.OUTPUT_FOLDER, null);
+        if(currentOutputFolder == null) {
+            prefsEdit.putString(SettingsActivity.OUTPUT_FOLDER, outputPath);
+        }
+        String currentImageFolder = prefs.getString(SettingsActivity.IMAGES_FOLDER, null);
+        if(currentImageFolder == null){
+            prefsEdit.putString(SettingsActivity.IMAGES_FOLDER, imagesPath);
+        }
+        prefsEdit.apply();
+    }
+
     private void initDrawer(){
         mDrawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
         mDrawerList = (RecyclerView) findViewById(R.id.left_drawer);
@@ -117,7 +142,7 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
 
     private void initEditor(){
         scrollView = (VerticalScrollView) findViewById(R.id.editor_scroll_view);
-        editor = (Editor) findViewById(R.id.editor);
+        editor = (LatexEditor) findViewById(R.id.editor);
 
         editor.setVerticalScrollBarEnabled(true);
         editor.setMovementMethod(new ScrollingMovementMethod());
@@ -231,26 +256,37 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
     }
 
     private void generatePDF(){
+        Toast.makeText(this, "Compressing and sending files...", Toast.LENGTH_SHORT).show();
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
-        String defaultOutput = sharedPref.getString(SettingsActivity.OUTPUT_FOLDER, "");
+        String imagesFolderPath = sharedPref.getString(SettingsActivity.IMAGES_FOLDER, "");
+        final String outputFolderPath = sharedPref.getString(SettingsActivity.OUTPUT_FOLDER, "");
+        File imagesFolder = new File(imagesFolderPath);
+        final File outputFolder = new File(outputFolderPath);
+        File zip = ZipUtils.newZipFile(outputFolderPath + document.getName(), document, imagesFolder);
 
-        /*
         RequestParams params = new RequestParams();
-        params.put("file", editor.getTextString());
+        try {
+            params.put("zip_file", zip, "application/zip");
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
 
         LatexNetClient.post("latex", params, new FileAsyncHttpResponseHandler(this) {
             @Override
             public void onFailure(int i, Header[] headers, Throwable throwable, File file) {
-                Log.v("WE", ":(");
+                Toast.makeText(getApplicationContext(), "Something went wrong",
+                        Toast.LENGTH_LONG).show();
+                Log.e("NET", throwable.getMessage() + "");
             }
 
             @Override
             public void onSuccess(int i, Header[] headers, File file) {
 
                 byte[] bytes = FilesUtils.readBinaryFile(file);
-
-                File pdf = FilesUtils.newFile("nuovo.pdf");
+                String pdfName = document.getName().substring(0, document.getName().lastIndexOf(".")) + ".pdf";
+                File pdf = new File(outputFolderPath, pdfName);
                 FilesUtils.writeBinaryFile(pdf, bytes);
+
 
                 Intent pdfIntent = new Intent();
                 pdfIntent.setAction(Intent.ACTION_VIEW);
@@ -260,7 +296,7 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
                     startActivity(pdfIntent);
                 }
             }
-        });*/
+        });
     }
 
     public void onOpenClick(View view) {

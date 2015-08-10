@@ -9,7 +9,7 @@
     android:background="@null"
     android:layout_weight="1">
 
-    <me.albertonicoletti.latex.Editor
+    <me.albertonicoletti.latex.LatexEditor
         android:id="@+id/editor"
         android:layout_width="match_parent"
         android:layout_height="match_parent"

@@ -18,7 +18,7 @@ import java.util.regex.Pattern;
  * The editor, an EditText with extended functionality:
  * - Line count
  */
-public class Editor extends EditText {
+public class LatexEditor extends EditText {
 
     public final Pattern commandsPattern = Pattern.compile("([\\\\])\\w+(\\*)*", Pattern.MULTILINE);
     public final Pattern keywordsPattern = Pattern.compile("([{]).+([}])", Pattern.MULTILINE);
@@ -39,7 +39,7 @@ public class Editor extends EditText {
     /** Line counter's column right margin (the margin before the text starts) */
     private int lineCounterColumnMargin;
 
-    public Editor(Context context, AttributeSet attrs) {
+    public LatexEditor(Context context, AttributeSet attrs) {
         super(context, attrs);
         // Number's color
         numberPainter.setColor(getResources().getColor(R.color.text_grey));

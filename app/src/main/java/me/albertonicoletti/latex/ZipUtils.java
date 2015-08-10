@@ -82,7 +82,7 @@ public class ZipUtils {
      * @return The zip file
      */
     public static File newZipFile(String zipPath, File... files){
-        int lastIndex = Math.max(zipPath.lastIndexOf("."), zipPath.length());
+        int lastIndex = Math.min(zipPath.lastIndexOf("."), zipPath.length());
         File zipFile = new File(zipPath.substring(0, lastIndex) + ".zip");
         try {
             FileOutputStream dest = new FileOutputStream(zipFile);
