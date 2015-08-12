@@ -20,10 +20,22 @@ import java.util.regex.Pattern;
  */
 public class LatexEditor extends EditText {
 
-    public final Pattern commandsPattern = Pattern.compile("([\\\\])\\w+(\\*)*", Pattern.MULTILINE);
+    /*public final Pattern commandsPattern = Pattern.compile("([\\\\])\\w+(\\*)*", Pattern.MULTILINE);
     public final Pattern keywordsPattern = Pattern.compile("([{]).+([}])", Pattern.MULTILINE);
     public final Pattern thirdPattern = Pattern.compile("([\\[]).+([\\]])", Pattern.MULTILINE);
-    public final Pattern commentsPattern = Pattern.compile("(%).*$", Pattern.MULTILINE);
+    public final Pattern commentsPattern = Pattern.compile("(%).*$", Pattern.MULTILINE);*/
+
+    public final Pattern[] patterns = { Pattern.compile("([\\\\])\\w+(\\*)*", Pattern.MULTILINE),
+                                        Pattern.compile("([{]).+([}])", Pattern.MULTILINE),
+                                        Pattern.compile("([\\[]).+([\\]])", Pattern.MULTILINE),
+                                        Pattern.compile("(%).*$", Pattern.MULTILINE)
+    };
+
+    public final int[] patternColors = {getResources().getColor(R.color.latex_class),
+                                        getResources().getColor(R.color.latex_keyword),
+                                        getResources().getColor(R.color.latex_third),
+                                        getResources().getColor(R.color.text_grey)
+    };
 
     /** Painter used to draw numbers */
     private static final TextPaint numberPainter = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
@@ -61,32 +73,15 @@ public class LatexEditor extends EditText {
 
         CharSequence s = getText().subSequence(start, end);
 
-        Matcher matcher = keywordsPattern.matcher(s);
-        while (matcher.find()) {
-            editable.setSpan(new ForegroundColorSpan(getResources()
-                            .getColor(R.color.latex_class)),
-                    start + matcher.start(), start + matcher.end(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-        }
-
-        matcher = commandsPattern.matcher(s);
-        while (matcher.find()) {
-            editable.setSpan(new ForegroundColorSpan(getResources()
-                            .getColor(R.color.latex_keyword)),
-                    start + matcher.start(), start + matcher.end(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-        }
-
-        matcher = thirdPattern.matcher(s);
-        while (matcher.find()) {
-            editable.setSpan(new ForegroundColorSpan(getResources()
-                            .getColor(R.color.latex_third)),
-                    start + matcher.start(), start + matcher.end(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-        }
-
-        matcher = commentsPattern.matcher(s);
-        while (matcher.find()) {
-            editable.setSpan(new ForegroundColorSpan(getResources()
-                            .getColor(R.color.text_grey)),
-                    start + matcher.start(), start + matcher.end(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        for(int i = 0; i < patterns.length; i++){
+            Matcher matcher = patterns[i].matcher(s);
+            while(matcher.find()){
+                if(matcher.group().length() > 0){
+                    editable.setSpan(new ForegroundColorSpan(patternColors[i%patternColors.length]),
+                            start + matcher.start(), start + matcher.end(),
+                            Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                }
+            }
         }
 
     }

@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -82,6 +83,39 @@ public class ZipUtils {
      * @return The zip file
      */
     public static File newZipFile(String zipPath, File... files){
+        int lastIndex = zipPath.length();
+        if(zipPath.contains(".")){
+            lastIndex = zipPath.indexOf(".");
+        }
+        lastIndex = Math.max(0, lastIndex);
+        File zipFile = new File(zipPath.substring(0, lastIndex) + ".zip");
+        try {
+            FileOutputStream dest = new FileOutputStream(zipFile);
+            ZipOutputStream zipper = new ZipOutputStream(new BufferedOutputStream(dest));
+
+            if(files != null) {
+                for (File file : files) {
+                    if(file.isDirectory()) {
+                        addDirectory(zipper, file);
+                    } else {
+                        addZipEntry(zipper, null, file);
+                    }
+                }
+            }
+
+            zipper.close();
+
+        } catch(IOException ignored) {}
+        return zipFile;
+    }
+
+    /**
+     * Creates a new zip file containing the given files
+     * @param zipPath Zip's path
+     * @param files Files to add to the zip
+     * @return The zip file
+     */
+    public static File newZipFile(String zipPath, List<File> files){
         int lastIndex = Math.min(zipPath.lastIndexOf("."), zipPath.length());
         File zipFile = new File(zipPath.substring(0, lastIndex) + ".zip");
         try {

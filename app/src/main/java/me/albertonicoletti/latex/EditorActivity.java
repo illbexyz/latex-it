@@ -33,7 +33,10 @@ import org.apache.http.Header;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FilenameFilter;
 import java.util.LinkedList;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 public class EditorActivity extends Activity implements DocumentClickListener.DocumentClickInterface,
@@ -243,6 +246,9 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
      * Routine to save a specific document
      */
     private void saveFile(File document){
+        if(!document.exists()){
+            FilesUtils.saveFileRenaming(document.getName(), editor.getTextString());
+        }
         FilesUtils.writeFile(document, editor.getTextString());
         textModified = false;
     }
@@ -256,14 +262,46 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
     }
 
     private void generatePDF(){
+        saveFile(document);
         Toast.makeText(this, "Compressing and sending files...", Toast.LENGTH_SHORT).show();
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
-        String imagesFolderPath = sharedPref.getString(SettingsActivity.IMAGES_FOLDER, "");
+        final String imagesFolderPath = sharedPref.getString(SettingsActivity.IMAGES_FOLDER, "");
         final String outputFolderPath = sharedPref.getString(SettingsActivity.OUTPUT_FOLDER, "");
         File imagesFolder = new File(imagesFolderPath);
         final File outputFolder = new File(outputFolderPath);
-        File zip = ZipUtils.newZipFile(outputFolderPath + document.getName(), document, imagesFolder);
 
+        final LinkedList<String> imagesFilenames = new LinkedList<>();
+        String editorText = editor.getTextString();
+
+        Pattern pattern = Pattern.compile("(?<=^\\\\includegraphics).*\\{.*\\}", Pattern.MULTILINE);
+        Matcher matcher = pattern.matcher(editorText);
+
+        while(matcher.find()){
+            if(matcher.group().length() > 0) {
+                String group = matcher.group();
+                group = group.substring(group.indexOf("{")+1, group.indexOf("}"));
+                group = group.substring(0, group.indexOf("."));
+                imagesFilenames.add(group);
+            }
+        }
+
+        FilenameFilter filter = new FilenameFilter() {
+            @Override
+            public boolean accept(File dir, String filename) {
+                String filenameNoExt = filename.substring(0, filename.lastIndexOf("."));
+                if(imagesFilenames.contains(filenameNoExt)){
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+        };
+
+        File[] images = imagesFolder.listFiles(filter);
+        File[] files = new File[images.length+1];
+        files[files.length-1] = document;
+
+        File zip = ZipUtils.newZipFile(outputFolderPath + document.getName(), files);
         RequestParams params = new RequestParams();
         try {
             params.put("zip_file", zip, "application/zip");
@@ -390,16 +428,13 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
 
     @Override
     public void onRenameDialogConfirmClick(DialogFragment dialog, String path, String newFilename) {
-        // Recreate the document
-        File newDocument = new File(path);
-        // Save it on disk
-        FilesUtils.saveFileOnDisk(newDocument.getParentFile(), newDocument);
-        // Recreate it to change the name (the file won't change his name otherwise)
-        newDocument = new File(FilesUtils.renameFile(newDocument, newFilename).getPath());
+        File newDocument = FilesUtils.saveFileRenaming(newFilename, editor.getTextString());
+        textModified = false;
         // Remove the old document from the dataset and insert the new one in the same position
         int oldDocumentIndex = documents.indexOf(this.document);
         documents.remove(this.document);
         documents.add(oldDocumentIndex, newDocument);
+        FilesUtils.deleteFile(document);
         this.document = newDocument;
         // Update the title and drawer
         refreshTitleAndDrawer();

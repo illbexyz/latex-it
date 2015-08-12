@@ -94,17 +94,6 @@ public class FilesUtils {
         writeFile(internalFile, toSave);
     }
 
-    public static void saveFileOnDisk(File directory, File file){
-        File fileToSave = new File(directory, file.getName());
-        try {
-            if(!fileToSave.createNewFile()){
-                Log.e("FILE", "Can't create a new document.");
-            }
-        } catch (IOException e) {
-            Log.e("FILE", "Can't create a new document. " + e.getMessage());
-        }
-    }
-
     /**
      * Deletes a file
      * @param file File to delete
@@ -199,6 +188,12 @@ public class FilesUtils {
         } catch (IOException e) {
             Log.e("FILE", "Can't write in the file: " + e.getMessage());
         }
+    }
+
+    public static File saveFileRenaming(String newName, String text){
+        File newFile = new File(getDocumentsDir(), newName);
+        writeFile(newFile, text);
+        return newFile;
     }
 
     /**
