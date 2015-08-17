@@ -1,6 +1,9 @@
 package me.albertonicoletti.latex;
 
+import android.graphics.Typeface;
 import android.support.v7.widget.RecyclerView;
+import android.text.SpannableString;
+import android.text.style.StyleSpan;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -119,6 +122,11 @@ public class DocumentsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
             DrawerDocumentViewHolder drawerDocumentViewHolder = (DrawerDocumentViewHolder) holder;
             drawerDocumentViewHolder.documentTitleView.setText(documentsList.get(position).getName());
             drawerDocumentViewHolder.documentPath.setText(documentsList.get(position).getPath());
+            if(!documentsList.get(position).exists()){
+                SpannableString italicString = new SpannableString(drawerDocumentViewHolder.documentTitleView.getText());
+                italicString.setSpan(new StyleSpan(Typeface.ITALIC), 0, italicString.length(), 0);
+                drawerDocumentViewHolder.documentTitleView.setText(italicString);
+            }
         } else {
             DocumentViewHolder documentViewHolder = (DocumentViewHolder) holder;
             documentViewHolder.documentTitleView.setText(documentsList.get(position).getName());

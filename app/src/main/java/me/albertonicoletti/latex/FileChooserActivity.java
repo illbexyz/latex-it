@@ -5,29 +5,39 @@ import android.app.DialogFragment;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.io.File;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.LinkedList;
+import java.util.Stack;
 
 
 public class FileChooserActivity extends Activity
-        implements  DocumentDialog.DocumentDialogListener,
+        implements  DocumentOptionsDialog.DocumentDialogListener,
                     RenameDialog.RenameDialogListener,
-                    DocumentClickListener.DocumentClickInterface {
+                    DocumentClickListener.DocumentClickInterface,
+                    Comparator<File> {
 
     private RecyclerView documentsListView;
     private DocumentsAdapter documentsAdapter;
     private DocumentClickListener documentClickListener;
     private RecyclerView.LayoutManager documentsLayoutManager;
+
     private LinkedList<File> directories;
     private LinkedList<File> files;
     private File currentDirectory;
+
+    String rootDirectoryPath = Environment.getExternalStorageDirectory().getPath();
+    private long backPressed = 0;
 
 
     @Override
@@ -45,13 +55,33 @@ public class FileChooserActivity extends Activity
         documentClickListener = new DocumentClickListener(this);
         documentsAdapter = new DocumentsAdapter(files, documentClickListener, DocumentsAdapter.FILE_CHOOSER);
         documentsListView.setAdapter(documentsAdapter);
-        setTitle("Choose a file");
+        setTitle(getString(R.string.choose_file));
     }
 
     @Override
     protected void onResume(){
         super.onResume();
+        refreshPathSubtitle();
         this.refreshDocuments(currentDirectory);
+    }
+
+    private void refreshPathSubtitle(){
+        TextView currentPathView = (TextView) findViewById(R.id.current_path);
+        Stack<String> stack = new Stack<>();
+        File dir = currentDirectory;
+        stack.push(dir.getName());
+        if(!dir.getPath().equals(rootDirectoryPath)) {
+            while (!dir.getParent().equals(rootDirectoryPath)) {
+                dir = dir.getParentFile();
+                stack.push(dir.getName());
+            }
+            stack.push(dir.getParentFile().getName());
+        }
+        String title = stack.pop();
+        while(!stack.empty()){
+            title += "/" + stack.pop();
+        }
+        currentPathView.setText(title);
     }
 
     /**
@@ -59,10 +89,13 @@ public class FileChooserActivity extends Activity
      */
     private void refreshDocuments(File directory) {
         this.currentDirectory = directory;
-        files = FilesUtils.getExistingFiles(directory);
+        files = FilesUtils.getTexDocuments(directory);
+        Collections.sort(files, this);
         directories = FilesUtils.getDirectories(directory);
+        Collections.sort(directories, this);
         directories.addAll(files);
         documentsAdapter.refresh(directories);
+        refreshPathSubtitle();
     }
 
     private void parentDirectory(){
@@ -126,10 +159,15 @@ public class FileChooserActivity extends Activity
 
     @Override
     public void onBackPressed() {
-        if(currentDirectory.getParentFile() != null) {
+        if(!currentDirectory.getPath().equals(rootDirectoryPath)) {
             parentDirectory();
         } else {
-            super.onBackPressed();
+            if (backPressed + 2000 > System.currentTimeMillis()){
+                super.onBackPressed();
+            } else {
+                Toast.makeText(getBaseContext(), "Press once again to exit!", Toast.LENGTH_SHORT).show();
+                backPressed = System.currentTimeMillis();
+            }
         }
     }
 
@@ -163,13 +201,18 @@ public class FileChooserActivity extends Activity
         // Adds a "filename" parameter containing the filename
         args.putString("filename", m.getText().toString());
         // Creates the dialog and adds the parameter
-        DialogFragment dialog = new DocumentDialog();
+        DialogFragment dialog = new DocumentOptionsDialog();
         dialog.setArguments(args);
         // Opens thee dialog
-        dialog.show(getFragmentManager(), "document_dialog");
+        dialog.show(getFragmentManager(), "file_chooser_longclick_dialog");
     }
 
     public void onBackClick(MenuItem item) {
         parentDirectory();
+    }
+
+    @Override
+    public int compare(File lhs, File rhs) {
+        return lhs.getName().compareToIgnoreCase(rhs.getName());
     }
 }

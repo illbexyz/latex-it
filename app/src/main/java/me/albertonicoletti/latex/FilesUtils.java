@@ -213,7 +213,7 @@ public class FilesUtils {
      * Gets the files in Documents folder
      * @return Files in Documents folder
      */
-    public static LinkedList<File> getExistingFiles(){
+    public static LinkedList<File> getTexDocuments(){
         LinkedList<File> filenames = new LinkedList<>();
         File directory = getDocumentsDir();
         File[] files = directory.listFiles();
@@ -233,15 +233,12 @@ public class FilesUtils {
      * @param directory Directory
      * @return Files in the directory
      */
-    public static LinkedList<File> getExistingFiles(File directory){
+    public static LinkedList<File> getTexDocuments(File directory){
         LinkedList<File> filenames = new LinkedList<>();
         File[] files = directory.listFiles();
         for(File file : files){
             if(file.isFile()){
-                String filename = file.getName();
-                if(filename.endsWith(".tex")){
-                    filenames.add(file);
-                }
+                filenames.add(file);
             }
         }
         return filenames;

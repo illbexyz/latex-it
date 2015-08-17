@@ -1,5 +1,7 @@
 package me.albertonicoletti.latex;
 
+import android.util.Log;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -105,7 +107,9 @@ public class ZipUtils {
 
             zipper.close();
 
-        } catch(IOException ignored) {}
+        } catch(IOException e) {
+            Log.e("ZIP", "Error zipping the files: " + e);
+        }
         return zipFile;
     }
 

@@ -23,6 +23,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.PopupMenu;
+import android.widget.PopupWindow;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -34,6 +35,7 @@ import org.apache.http.Header;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -41,7 +43,7 @@ import java.util.regex.Pattern;
 
 public class EditorActivity extends Activity implements DocumentClickListener.DocumentClickInterface,
                                                         RenameDialog.RenameDialogListener,
-                                                        DocumentDialog.DocumentDialogListener {
+                                                        DocumentOptionsDialog.DocumentDialogListener {
 
     /** Left Drawer Layout */
     private DrawerLayout mDrawerLayout;
@@ -62,10 +64,16 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
     /** The document the editor is showing */
     private File document;
 
+    private PopupWindow popupWindow;
+
     /** Set to true if the text has been modified and not saved */
     private boolean textModified = false;
 
     private boolean initialized = false;
+
+    private boolean isLog = false;
+
+    private long backPressed = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -211,28 +219,45 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
 
     @Override
     public void onBackPressed() {
-        if(textModified){
-            AlertDialog dialog = new AlertDialog.Builder(this).create();
-            dialog.setTitle("Unsaved File");
-            dialog.setMessage("You have unsaved changes in your file.\nDo you want to save them?");
-            dialog.setCancelable(false);
-            dialog.setButton(AlertDialog.BUTTON_NEGATIVE, "No", new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialogInterface, int i) {
-                    EditorActivity.this.finish();
-                }
-            });
-            dialog.setButton(AlertDialog.BUTTON_POSITIVE, "Yes", new DialogInterface.OnClickListener(){
-                @Override
-                public void onClick(DialogInterface dialogInterface, int i) {
-                    saveFile(document);
-                    EditorActivity.this.finish();
-                }
-            });
-            dialog.show();
+//        if (popupWindow != null && popupWindow.isShowing()) {
+//            popupWindow.dismiss();
+//        } else {
+        if(isLog){
+            removeDocument();
+            openDocumentInEditor(documents.getFirst());
+            isLog = false;
         } else {
-            super.onBackPressed();
+            /*
+            if (textModified) {
+                AlertDialog dialog = new AlertDialog.Builder(this).create();
+                dialog.setTitle("Unsaved File");
+                dialog.setMessage("You have unsaved changes in your file.\nDo you want to save them?");
+                dialog.setCancelable(false);
+                dialog.setButton(AlertDialog.BUTTON_NEGATIVE, "No", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        EditorActivity.this.finish();
+                    }
+                });
+                dialog.setButton(AlertDialog.BUTTON_POSITIVE, "Yes", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        saveFile(document);
+                        EditorActivity.this.finish();
+                    }
+                });
+                dialog.show();
+            } else {
+                super.onBackPressed();
+            }*/
+            if (backPressed + 2000 > System.currentTimeMillis()){
+                super.onBackPressed();
+            } else {
+                Toast.makeText(getBaseContext(), "Press once again to exit!", Toast.LENGTH_SHORT).show();
+                backPressed = System.currentTimeMillis();
+            }
         }
+//        }
     }
 
     @Override
@@ -246,8 +271,26 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
      * Routine to save a specific document
      */
     private void saveFile(File document){
-        if(!document.exists()){
-            FilesUtils.saveFileRenaming(document.getName(), editor.getTextString());
+        String name = document.getName();
+        if(!name.endsWith(".tex")){
+            int lastIndex;
+            if(name.contains(".")){
+                lastIndex = name.lastIndexOf(".");
+            } else {
+                lastIndex = name.length();
+            }
+            name = name.substring(0, lastIndex) + ".tex";
+
+            File newDocument = FilesUtils.saveFileRenaming(name, editor.getTextString());
+            textModified = false;
+            // Remove the old document from the dataset and insert the new one in the same position
+            int oldDocumentIndex = documents.indexOf(this.document);
+            documents.remove(this.document);
+            documents.add(oldDocumentIndex, newDocument);
+            FilesUtils.deleteFile(document);
+            this.document = newDocument;
+            // Update the title and drawer
+            refreshTitleAndDrawer();
         }
         FilesUtils.writeFile(document, editor.getTextString());
         textModified = false;
@@ -263,86 +306,120 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
 
     private void generatePDF(){
         saveFile(document);
-        Toast.makeText(this, "Compressing and sending files...", Toast.LENGTH_SHORT).show();
-        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
-        final String imagesFolderPath = sharedPref.getString(SettingsActivity.IMAGES_FOLDER, "");
-        final String outputFolderPath = sharedPref.getString(SettingsActivity.OUTPUT_FOLDER, "");
-        File imagesFolder = new File(imagesFolderPath);
-        final File outputFolder = new File(outputFolderPath);
+        if(!editor.getTextString().equals("")) {
+            Toast.makeText(this, "Compressing and sending files...", Toast.LENGTH_SHORT).show();
+            SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
+            final String imagesFolderPath = sharedPref.getString(SettingsActivity.IMAGES_FOLDER, "");
+            final String outputFolderPath = sharedPref.getString(SettingsActivity.OUTPUT_FOLDER, "");
+            File imagesFolder = new File(imagesFolderPath);
+            final File outputFolder = new File(outputFolderPath);
 
-        final LinkedList<String> imagesFilenames = new LinkedList<>();
-        String editorText = editor.getTextString();
+            final LinkedList<String> imagesFilenames = new LinkedList<>();
+            String editorText = editor.getTextString();
 
-        Pattern pattern = Pattern.compile("(?<=^\\\\includegraphics).*\\{.*\\}", Pattern.MULTILINE);
-        Matcher matcher = pattern.matcher(editorText);
+            Pattern pattern = Pattern.compile("(?<=\\\\includegraphics).*\\{.*\\}", Pattern.MULTILINE);
+            Matcher matcher = pattern.matcher(editorText);
 
-        while(matcher.find()){
-            if(matcher.group().length() > 0) {
-                String group = matcher.group();
-                group = group.substring(group.indexOf("{")+1, group.indexOf("}"));
-                group = group.substring(0, group.indexOf("."));
-                imagesFilenames.add(group);
-            }
-        }
-
-        FilenameFilter filter = new FilenameFilter() {
-            @Override
-            public boolean accept(File dir, String filename) {
-                String filenameNoExt = filename.substring(0, filename.lastIndexOf("."));
-                if(imagesFilenames.contains(filenameNoExt)){
-                    return true;
-                } else {
-                    return false;
+            while (matcher.find()) {
+                if (matcher.group().length() > 0) {
+                    String group = matcher.group();
+                    group = group.substring(group.indexOf("{") + 1, group.indexOf("}"));
+                    group = group.substring(0, group.indexOf("."));
+                    imagesFilenames.add(group);
                 }
             }
-        };
 
-        File[] images = imagesFolder.listFiles(filter);
-        File[] files = new File[images.length+1];
-        files[files.length-1] = document;
-
-        File zip = ZipUtils.newZipFile(outputFolderPath + document.getName(), files);
-        RequestParams params = new RequestParams();
-        try {
-            params.put("zip_file", zip, "application/zip");
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
-
-        LatexNetClient.post("latex", params, new FileAsyncHttpResponseHandler(this) {
-            @Override
-            public void onFailure(int i, Header[] headers, Throwable throwable, File file) {
-                Toast.makeText(getApplicationContext(), "Something went wrong",
-                        Toast.LENGTH_LONG).show();
-                Log.e("NET", throwable.getMessage() + "");
-            }
-
-            @Override
-            public void onSuccess(int i, Header[] headers, File file) {
-
-                byte[] bytes = FilesUtils.readBinaryFile(file);
-                String pdfName = document.getName().substring(0, document.getName().lastIndexOf(".")) + ".pdf";
-                File pdf = new File(outputFolderPath, pdfName);
-                FilesUtils.writeBinaryFile(pdf, bytes);
-
-
-                Intent pdfIntent = new Intent();
-                pdfIntent.setAction(Intent.ACTION_VIEW);
-                pdfIntent.setDataAndType(Uri.fromFile(pdf), "application/pdf");
-
-                if (pdfIntent.resolveActivity(getPackageManager()) != null) {
-                    startActivity(pdfIntent);
+            FilenameFilter filter = new FilenameFilter() {
+                @Override
+                public boolean accept(File dir, String filename) {
+                    String filenameNoExt = filename.substring(0, filename.lastIndexOf("."));
+                    if (imagesFilenames.contains(filenameNoExt)) {
+                        return true;
+                    } else {
+                        return false;
+                    }
                 }
+            };
+
+            File[] images = imagesFolder.listFiles(filter);
+            File[] files = Arrays.copyOf(images, images.length + 1);
+            files[files.length - 1] = document;
+            File zip = ZipUtils.newZipFile(outputFolderPath + document.getName(), files);
+            RequestParams params = new RequestParams();
+            try {
+                params.put("zip_file", zip, "application/zip");
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
             }
-        });
+
+            LatexNetClient.post("latex", params, new FileAsyncHttpResponseHandler(this) {
+                @Override
+                public void onFailure(int i, Header[] headers, Throwable throwable, File file) {
+                    Toast.makeText(getApplicationContext(), "Something went wrong",
+                            Toast.LENGTH_LONG).show();
+                    Log.e("NET", throwable.getMessage() + "");
+                }
+
+                @Override
+                public void onSuccess(int i, Header[] headers, final File file) {
+                    Header header = null;
+                    for (Header h : headers) {
+                        if (h.getName().equals("Content-Type")) {
+                            header = h;
+                            break;
+                        }
+                    }
+
+                    assert header != null;
+                    if (header.getValue().equals("application/pdf")) {
+                        byte[] bytes = FilesUtils.readBinaryFile(file);
+                        String pdfName = document.getName().substring(0, document.getName().lastIndexOf(".")) + ".pdf";
+                        File pdf = new File(outputFolderPath, pdfName);
+                        FilesUtils.writeBinaryFile(pdf, bytes);
+                        Intent pdfIntent = new Intent();
+                        pdfIntent.setAction(Intent.ACTION_VIEW);
+                        pdfIntent.setDataAndType(Uri.fromFile(pdf), "application/pdf");
+
+                        if (pdfIntent.resolveActivity(getPackageManager()) != null) {
+                            startActivity(pdfIntent);
+                        } else {
+                            Toast.makeText(getApplicationContext(), "You don't have any app to show pdf!",
+                                    Toast.LENGTH_LONG).show();
+                        }
+                    } else {
+                        final AlertDialog dialog = new AlertDialog.Builder(EditorActivity.this).create();
+                        dialog.setTitle("Unsaved File");
+                        dialog.setMessage("Latex compiling has failed.\nDo you wish to open the log?");
+                        dialog.setCancelable(false);
+                        dialog.setButton(AlertDialog.BUTTON_NEGATIVE, "No", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+                                dialog.dismiss();
+                            }
+                        });
+                        dialog.setButton(AlertDialog.BUTTON_POSITIVE, "Yes", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+                                isLog = true;
+                                openDocumentInEditor(file);
+                            }
+                        });
+                        dialog.show();
+                    }
+                }
+            });
+        } else {
+            Toast.makeText(getApplicationContext(), "Can't compile an empty file!",
+                    Toast.LENGTH_LONG).show();
+        }
     }
 
     public void onOpenClick(View view) {
-        //Intent intent = new Intent(this, FileChooserActivity.class);
-        //startActivityForResult(intent, 1);
-        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-        intent.setType("file/*");
+        Intent intent = new Intent(this, FileChooserActivity.class);
         startActivityForResult(intent, 1);
+        /*Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        intent.setType("file/*");
+        startActivityForResult(intent, 1);*/
     }
 
     public void onSymbolClick(View view) {
@@ -407,10 +484,10 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
         // Adds a "filename" parameter containing the filename
         args.putString("filepath", m.getText().toString());
         // Creates the dialog and adds the parameter
-        DialogFragment dialog = new DocumentDialog();
+        DialogFragment dialog = new DocumentOptionsDialog();
         dialog.setArguments(args);
         // Opens thee dialog
-        dialog.show(getFragmentManager(), "document_dialog");
+        dialog.show(getFragmentManager(), "editor_drawer_longclick");
     }
 
     public void onNewFileClick(View view) {
@@ -426,36 +503,44 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
         }
     }
 
-    @Override
-    public void onRenameDialogConfirmClick(DialogFragment dialog, String path, String newFilename) {
-        File newDocument = FilesUtils.saveFileRenaming(newFilename, editor.getTextString());
-        textModified = false;
-        // Remove the old document from the dataset and insert the new one in the same position
-        int oldDocumentIndex = documents.indexOf(this.document);
-        documents.remove(this.document);
-        documents.add(oldDocumentIndex, newDocument);
-        FilesUtils.deleteFile(document);
-        this.document = newDocument;
-        // Update the title and drawer
-        refreshTitleAndDrawer();
+    private void removeDocument(){
+        removeDocument(document);
     }
 
-    @Override
-    public void onDialogDeleteClick(DialogFragment dialog, String path) {
-        File file = new File(path);
+    private void removeDocument(File file){
         documents.remove(file);
         if(file == document){
             if(documents.size() > 0){
-                document = documents.get(0);
+                document = documents.getFirst();
             } else {
                 document = FilesUtils.newFile();
             }
         }
         refreshTitleAndDrawer();
+        openDocumentInEditor(document);
+    }
+
+    /**
+     * Called when saving an untitled file or renaming an open one
+     * @param dialog
+     * @param path
+     * @param newFilename
+     */
+    @Override
+    public void onRenameDialogConfirmClick(DialogFragment dialog, String path, String newFilename) {
+        saveFile(new File(newFilename));
     }
 
     @Override
-    public void onDialogRenameClick(DialogFragment dialog, String filename) {
+    public void onDialogDeleteClick(DialogFragment dialog, String path) {
+        File file = new File(path);
+        removeDocument(file);
+        refreshTitleAndDrawer();
+    }
 
+    @Override
+    public void onDialogRenameClick(DialogFragment dialog, String path) {
+        File file = new File(path);
+        DialogsUtil.showRenameDialog(this, file);
     }
 }

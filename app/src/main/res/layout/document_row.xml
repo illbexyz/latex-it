@@ -11,13 +11,13 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:paddingTop="18dp"
-        android:paddingBottom="18dp"
-        android:paddingLeft="16dp"
-        android:paddingRight="16dp" >
+        android:paddingTop="13dp"
+        android:paddingBottom="13dp"
+        android:paddingLeft="14dp"
+        android:paddingRight="14dp" >
         <ImageView
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
             android:id="@+id/file_type_image"
             android:contentDescription="@string/filetype" />
 
@@ -25,7 +25,8 @@
             android:orientation="vertical"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_marginLeft="16dp">
+            android:layout_marginLeft="16dp"
+            android:gravity="center_vertical">
 
             <TextView
                 android:layout_width="wrap_content"
@@ -34,18 +35,18 @@
                 android:layout_gravity="left|center_horizontal"
                 android:gravity="center_vertical"
                 android:text="@string/title"
-                android:textAppearance="?android:attr/textAppearanceMedium"
+                android:textSize="10dp"
                 android:textStyle="bold" />
 
             <LinearLayout
                 android:orientation="horizontal"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent">
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    android:textSize="8dp"
                     android:text="@string/modified"
                     android:textColor="@color/text_grey"
                     android:id="@+id/last_modified_label" />
@@ -53,7 +54,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    android:textSize="8dp"
                     android:textColor="@color/text_grey"
                     android:text="@string/date"
                     android:layout_marginLeft="2dp"

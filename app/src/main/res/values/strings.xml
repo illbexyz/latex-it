@@ -17,5 +17,6 @@
     <string name="date">Date</string>
     <string name="filetype">File type</string>
     <string name="back">Back</string>
+    <string name="choose_file">Choose a file</string>
 
 </resources>

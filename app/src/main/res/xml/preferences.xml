@@ -6,11 +6,13 @@
         <EditTextPreference
             android:key="images_folder"
             android:title="Images Folder"
-            android:summary="" />
+            android:summary="">
+        </EditTextPreference>
         <EditTextPreference
             android:key="output_folder"
             android:title="Output PDF Folder"
-            android:summary="" />
+            android:summary="">
+        </EditTextPreference>
     </PreferenceCategory>
     <PreferenceCategory>
 

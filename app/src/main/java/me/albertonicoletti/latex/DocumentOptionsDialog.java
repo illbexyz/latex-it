@@ -8,9 +8,9 @@ import android.content.DialogInterface;
 import android.os.Bundle;
 
 /**
- * Dialog showing actions to do on the documents
+ * Dialog showing the possible actions on documents
  */
-public class DocumentDialog extends DialogFragment {
+public class DocumentOptionsDialog extends DialogFragment {
 
     public interface DocumentDialogListener {
         void onDialogDeleteClick(DialogFragment dialog, String path);
@@ -47,15 +47,15 @@ public class DocumentDialog extends DialogFragment {
         path = getArguments().getString("filepath");
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
         builder.setTitle(R.string.document_dialog_title)
-                .setItems(R.array.document_dialog, new DialogInterface.OnClickListener() {
+                .setItems(R.array.file_chooser_longclick_dialog, new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int which) {
                         // The 'which' argument contains the index position
                         // of the selected item
                         switch(which) {
                             case 0:
-                                mListener.onDialogRenameClick(DocumentDialog.this, path);
+                                mListener.onDialogRenameClick(DocumentOptionsDialog.this, path);
                             case 1:
-                                mListener.onDialogDeleteClick(DocumentDialog.this, path);
+                                mListener.onDialogDeleteClick(DocumentOptionsDialog.this, path);
                         }
                     }
                 });
