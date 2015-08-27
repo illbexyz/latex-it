@@ -93,7 +93,7 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
                 popup.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
                     @Override
                     public boolean onMenuItemClick(MenuItem menuItem) {
-
+                        insertSymbol(menuItem.getTitle().toString());
                         return false;
                     }
                 });
@@ -424,8 +424,12 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
 
     public void onSymbolClick(View view) {
         Button button = (Button) view;
-        int selection = Math.max(0, editor.getSelectionStart());
         String symbol = button.getText().toString();
+        insertSymbol(symbol);
+    }
+
+    private void insertSymbol(String symbol){
+        int selection = Math.max(0, editor.getSelectionStart());
         editor.getText().insert(selection, symbol);
         editor.setSelection(selection + 1);
     }
@@ -509,7 +513,7 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
 
     private void removeDocument(File file){
         documents.remove(file);
-        if(file == document){
+        if(file.getPath() == document.getPath()){
             if(documents.size() > 0){
                 document = documents.getFirst();
             } else {
