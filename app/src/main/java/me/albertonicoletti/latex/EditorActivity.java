@@ -1,16 +1,21 @@
 package me.albertonicoletti.latex;
 
+import android.app.ActionBar;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.DialogFragment;
+import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.Configuration;
 import android.graphics.Point;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.Editable;
@@ -37,6 +42,7 @@ import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
 import java.util.Arrays;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -45,6 +51,7 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
                                                         RenameDialog.RenameDialogListener,
                                                         DocumentOptionsDialog.DocumentDialogListener {
 
+    private ActionBarDrawerToggle mDrawerToggle;
     /** Left Drawer Layout */
     private DrawerLayout mDrawerLayout;
     /** Recycler View containing the open documents */
@@ -58,20 +65,15 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
     /** A custom scrollView, used to intercept when a scroll is stopped */
     private VerticalScrollView scrollView;
     /** List of the open documents */
-    private LinkedList<File> documents = new LinkedList<>();
+    private LinkedList<Document> documents = new LinkedList<>();
     /** List of the images */
     //private LinkedList<LinkedList<File>> images = new LinkedList<>();
     /** The document the editor is showing */
-    private File document;
+    private Document document;
 
     private PopupWindow popupWindow;
 
-    /** Set to true if the text has been modified and not saved */
-    private boolean textModified = false;
-
     private boolean initialized = false;
-
-    private boolean isLog = false;
 
     private long backPressed = 0;
 
@@ -93,7 +95,7 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
                 popup.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
                     @Override
                     public boolean onMenuItemClick(MenuItem menuItem) {
-
+                        insertSymbol(menuItem.getTitle().toString());
                         return false;
                     }
                 });
@@ -104,16 +106,23 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
         Uri fileUri = getIntent().getData();
         // If a URI is passed
         if (fileUri != null) {
-            document = new File(fileUri.getPath());
+            document = new Document(fileUri.getPath());
         } else {
             // No URI is passed
             documents = DataPersistenceUtil.readSavedOpenFiles(getApplicationContext());
             if(documents.isEmpty()) {
                 // If there's no open document it opens a new untitled file
-                document = FilesUtils.newFile();
+                document = new Document(FilesUtils.newFile());
             } else {
                 // Else it gets the first open document
-                document = documents.get(0);
+                for(Document d : documents){
+                    if(d.isOpen()){
+                        document = d;
+                    }
+                }
+                if(document == null) {
+                    document = documents.get(0);
+                }
             }
         }
 
@@ -144,11 +153,52 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
         // Sets the layout manager
         documentsLayoutManager = new LinearLayoutManager(this);
         mDrawerList.setLayoutManager(documentsLayoutManager);
-        documentsAdapter = new DocumentsAdapter(documents,
+        documentsAdapter = new DocumentsAdapter(documentsToFiles(),
                 new DocumentClickListener(this),
                 DocumentsAdapter.DRAWER);
         mDrawerList.setAdapter(documentsAdapter);
         mDrawerLayout.openDrawer(Gravity.LEFT);
+        mDrawerToggle = new ActionBarDrawerToggle(
+                this,                  /* host Activity */
+                mDrawerLayout,         /* DrawerLayout object */
+                R.string.drawer_open,  /* "open drawer" description */
+                R.string.drawer_close  /* "close drawer" description */
+        ) {
+
+            /** Called when a drawer has settled in a completely closed state. */
+            public void onDrawerClosed(View view) {
+                super.onDrawerClosed(view);
+                ActionBar actionBar = getActionBar();
+                if(actionBar!= null) {
+                    actionBar.setTitle(document.getName());
+                }
+            }
+
+            /** Called when a drawer has settled in a completely open state. */
+            public void onDrawerOpened(View drawerView) {
+                super.onDrawerOpened(drawerView);
+                ActionBar actionBar = getActionBar();
+                if(actionBar!= null) {
+                    actionBar.setTitle("Choose File");
+                }
+            }
+        };
+
+        // Set the drawer toggle as the DrawerListener
+        mDrawerLayout.setDrawerListener(mDrawerToggle);
+        ActionBar actionBar = getActionBar();
+        if(actionBar!= null) {
+            actionBar.setDisplayHomeAsUpEnabled(true);
+            actionBar.setHomeButtonEnabled(true);
+        }
+    }
+
+    private List<File> documentsToFiles() {
+        LinkedList<File> files = new LinkedList<>();
+        for(Document doc : documents) {
+            files.add(doc);
+        }
+        return files;
     }
 
     private void initEditor(){
@@ -176,7 +226,6 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
             public void afterTextChanged(Editable s) {
                 if (initialized) {
                     highlightEditor();
-                    textModified = true;
                 }
             }
         });
@@ -199,21 +248,40 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
         editor.highlightText(start, end);
     }
 
-    private void changeFile(String path){
-        File file = new File(path);
-        openDocumentInEditor(file);
-    }
-
-    private void openDocumentInEditor(File document){
+    private void openDocumentInEditor(Document document){
+        this.document.setOpen(false);
+        document.setOpen(true);
         this.document = document;
-        String fileContent = FilesUtils.readTextFile(document);
+        editor.setText("");
+        new AsyncTask<File, Integer, String>(){
+            ProgressDialog asyncDialog = new ProgressDialog(EditorActivity.this);
+
+            @Override
+            protected void onPreExecute(){
+                asyncDialog.setMessage("Loading...");
+                asyncDialog.show();
+                super.onPreExecute();
+            }
+
+            @Override
+            protected String doInBackground(File... params) {
+                File file = params[0];
+                return FilesUtils.readTextFile(file);
+            }
+
+            @Override
+            protected void onPostExecute(String s) {
+                editor.setText(s);
+                asyncDialog.dismiss();
+                super.onPostExecute(s);
+            }
+
+        }.execute(document);
 
         if(!documents.contains(document)){
             documents.add(document);
         }
-        documentsAdapter.refresh(documents);
-        setTitle(document.getName());
-        editor.setText(fileContent);
+        refreshTitleAndDrawer();
         mDrawerLayout.closeDrawer(Gravity.LEFT);
     }
 
@@ -222,10 +290,9 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
 //        if (popupWindow != null && popupWindow.isShowing()) {
 //            popupWindow.dismiss();
 //        } else {
-        if(isLog){
+        if(document.isLog()){
             removeDocument();
             openDocumentInEditor(documents.getFirst());
-            isLog = false;
         } else {
             /*
             if (textModified) {
@@ -251,6 +318,7 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
                 super.onBackPressed();
             }*/
             if (backPressed + 2000 > System.currentTimeMillis()){
+                saveFile();
                 super.onBackPressed();
             } else {
                 Toast.makeText(getBaseContext(), "Press once again to exit!", Toast.LENGTH_SHORT).show();
@@ -270,8 +338,35 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
     /**
      * Routine to save a specific document
      */
-    private void saveFile(File document){
-        String name = document.getName();
+    private void saveFile(){
+        if(!document.exists()) {
+            DialogsUtil.showRenameDialog(this, document);
+        } else {
+            FilesUtils.writeFile(document, editor.getTextString());
+        }
+    }
+
+    private void renameFile(String oldPath, String newFilename){
+        String name = ensureTexExtension(newFilename);
+        Document oldDocument = new Document(oldPath);
+        Document newDocument = new Document(FilesUtils.saveFileRenaming(oldPath, name));
+        // Remove the old document from the dataset and insert the new one in the same position
+        if(documents.contains(oldDocument)) {
+            int oldDocumentIndex = documents.indexOf(oldDocument);
+            documents.remove(oldDocument);
+            documents.add(oldDocumentIndex, newDocument);
+            FilesUtils.deleteFile(oldDocument);
+        } else {
+            documents.add(newDocument);
+        }
+        if(document.getPath().equals(oldDocument.getPath())){
+            document = newDocument;
+        }
+        // Update the title and drawer
+        refreshTitleAndDrawer();
+    }
+
+    private String ensureTexExtension(String name){
         if(!name.endsWith(".tex")){
             int lastIndex;
             if(name.contains(".")){
@@ -280,39 +375,37 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
                 lastIndex = name.length();
             }
             name = name.substring(0, lastIndex) + ".tex";
-
-            File newDocument = FilesUtils.saveFileRenaming(name, editor.getTextString());
-            textModified = false;
-            // Remove the old document from the dataset and insert the new one in the same position
-            int oldDocumentIndex = documents.indexOf(this.document);
-            documents.remove(this.document);
-            documents.add(oldDocumentIndex, newDocument);
-            FilesUtils.deleteFile(document);
-            this.document = newDocument;
-            // Update the title and drawer
-            refreshTitleAndDrawer();
         }
-        FilesUtils.writeFile(document, editor.getTextString());
-        textModified = false;
+        return name;
     }
 
     /**
      * Routine to update the dataset
      */
     private void refreshTitleAndDrawer() {
-        setTitle(this.document.getName());
-        documentsAdapter.refresh(documents);
+        String title = document.getName();
+        ActionBar actionBar = getActionBar();
+        if(actionBar != null) {
+            actionBar.setTitle(title);
+        }
+        documentsAdapter.refresh(documentsToFiles());
     }
 
     private void generatePDF(){
-        saveFile(document);
+        saveFile();
         if(!editor.getTextString().equals("")) {
             Toast.makeText(this, "Compressing and sending files...", Toast.LENGTH_SHORT).show();
             SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
             final String imagesFolderPath = sharedPref.getString(SettingsActivity.IMAGES_FOLDER, "");
             final String outputFolderPath = sharedPref.getString(SettingsActivity.OUTPUT_FOLDER, "");
             File imagesFolder = new File(imagesFolderPath);
+            if(!imagesFolder.exists()){
+                FilesUtils.newDirectory(imagesFolderPath);
+            }
             final File outputFolder = new File(outputFolderPath);
+            if(!outputFolder.exists()){
+                FilesUtils.newDirectory(outputFolderPath);
+            }
 
             final LinkedList<String> imagesFilenames = new LinkedList<>();
             String editorText = editor.getTextString();
@@ -333,11 +426,7 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
                 @Override
                 public boolean accept(File dir, String filename) {
                     String filenameNoExt = filename.substring(0, filename.lastIndexOf("."));
-                    if (imagesFilenames.contains(filenameNoExt)) {
-                        return true;
-                    } else {
-                        return false;
-                    }
+                    return imagesFilenames.contains(filenameNoExt);
                 }
             };
 
@@ -345,6 +434,7 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
             File[] files = Arrays.copyOf(images, images.length + 1);
             files[files.length - 1] = document;
             File zip = ZipUtils.newZipFile(outputFolderPath + document.getName(), files);
+            zip.deleteOnExit();
             RequestParams params = new RequestParams();
             try {
                 params.put("zip_file", zip, "application/zip");
@@ -362,6 +452,7 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
 
                 @Override
                 public void onSuccess(int i, Header[] headers, final File file) {
+                    final Document receivedDocument = new Document(file);
                     Header header = null;
                     for (Header h : headers) {
                         if (h.getName().equals("Content-Type")) {
@@ -400,8 +491,8 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
                         dialog.setButton(AlertDialog.BUTTON_POSITIVE, "Yes", new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialogInterface, int i) {
-                                isLog = true;
-                                openDocumentInEditor(file);
+                                receivedDocument.setLog();
+                                openDocumentInEditor(receivedDocument);
                             }
                         });
                         dialog.show();
@@ -424,8 +515,12 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
 
     public void onSymbolClick(View view) {
         Button button = (Button) view;
-        int selection = Math.max(0, editor.getSelectionStart());
         String symbol = button.getText().toString();
+        insertSymbol(symbol);
+    }
+
+    private void insertSymbol(String symbol){
+        int selection = Math.max(0, editor.getSelectionStart());
         editor.getText().insert(selection, symbol);
         editor.setSelection(selection + 1);
     }
@@ -438,7 +533,7 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
             }
             Uri fileUri = data.getData();
 
-            openDocumentInEditor(new File(fileUri.getPath()));
+            openDocumentInEditor(new Document(fileUri.getPath()));
         }
         super.onActivityResult(requestCode, resultCode, data);
     }
@@ -451,7 +546,23 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
     }
 
     @Override
+    protected void onPostCreate(Bundle savedInstanceState) {
+        super.onPostCreate(savedInstanceState);
+        // Sync the toggle state after onRestoreInstanceState has occurred.
+        mDrawerToggle.syncState();
+    }
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        mDrawerToggle.onConfigurationChanged(newConfig);
+    }
+
+    @Override
     public boolean onOptionsItemSelected(MenuItem item) {
+        if (mDrawerToggle.onOptionsItemSelected(item)) {
+            return true;
+        }
         int id = item.getItemId();
 
         switch (id){
@@ -459,7 +570,7 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
                 startActivity(new Intent(this, SettingsActivity.class));
                 break;
             case R.id.action_save:
-                saveCurrentDocument();
+                saveFile();
                 break;
             case R.id.action_pdf:
                 generatePDF();
@@ -473,7 +584,7 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
     public void onDocumentClickListener(View v) {
         TextView textView = (TextView) v.findViewById(R.id.drawer_file_path);
         String filePath = textView.getText().toString();
-        changeFile(filePath);
+        openDocumentInEditor(documents.get(documents.indexOf(new Document(filePath))));
         mDrawerLayout.closeDrawer(Gravity.LEFT);
     }
 
@@ -491,16 +602,8 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
     }
 
     public void onNewFileClick(View view) {
-        File file = FilesUtils.newFile();
+        Document file = new Document(FilesUtils.newFile());
         openDocumentInEditor(file);
-    }
-
-    private void saveCurrentDocument(){
-        if(!document.exists()){
-            DialogsUtil.showRenameDialog(this, document);
-        } else {
-            saveFile(document);
-        }
     }
 
     private void removeDocument(){
@@ -509,11 +612,11 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
 
     private void removeDocument(File file){
         documents.remove(file);
-        if(file == document){
+        if(file.getPath().equals(document.getPath())){
             if(documents.size() > 0){
                 document = documents.getFirst();
             } else {
-                document = FilesUtils.newFile();
+                document = new Document(FilesUtils.newFile());
             }
         }
         refreshTitleAndDrawer();
@@ -522,20 +625,21 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
 
     /**
      * Called when saving an untitled file or renaming an open one
-     * @param dialog
-     * @param path
-     * @param newFilename
+     * @param dialog Dialog
+     * @param oldPath Old file path
+     * @param newFilename New filename
      */
     @Override
-    public void onRenameDialogConfirmClick(DialogFragment dialog, String path, String newFilename) {
-        saveFile(new File(newFilename));
+    public void onRenameDialogConfirmClick(DialogFragment dialog, String oldPath, String newFilename) {
+        if(newFilename.length() > 0) {
+            renameFile(oldPath, newFilename);
+        }
     }
 
     @Override
     public void onDialogDeleteClick(DialogFragment dialog, String path) {
         File file = new File(path);
         removeDocument(file);
-        refreshTitleAndDrawer();
     }
 
     @Override

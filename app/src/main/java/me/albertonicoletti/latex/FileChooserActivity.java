@@ -126,7 +126,8 @@ public class FileChooserActivity extends Activity
 
     @Override
     public void onDialogDeleteClick(DialogFragment dialog, String path) {
-
+        FilesUtils.deleteFile(new File(path));
+        refreshDocuments(currentDirectory);
     }
 
     /**
@@ -198,8 +199,9 @@ public class FileChooserActivity extends Activity
     public void onDocumentLongClickListener(View v) {
         TextView m = (TextView) v.findViewById(R.id.documentTitle);
         Bundle args = new Bundle();
+        String filepath = currentDirectory.getPath() + "/" + m.getText().toString();
         // Adds a "filename" parameter containing the filename
-        args.putString("filename", m.getText().toString());
+        args.putString("filepath", filepath);
         // Creates the dialog and adds the parameter
         DialogFragment dialog = new DocumentOptionsDialog();
         dialog.setArguments(args);

@@ -83,6 +83,14 @@ public class FilesUtils {
         return newDoc;
     }
 
+    public static File newDirectory(String path){
+        File directory = new File(path);
+        if(!directory.exists()){
+            directory.mkdir();
+        }
+        return directory;
+    }
+
     public static File getFileInternalMemory(Context context, String filename){
         File internalFile = new File(context.getFilesDir(), filename);
         return internalFile;
@@ -190,8 +198,10 @@ public class FilesUtils {
         }
     }
 
-    public static File saveFileRenaming(String newName, String text){
+    public static File saveFileRenaming(String oldPath, String newName){
+        File oldFile = new File(oldPath);
         File newFile = new File(getDocumentsDir(), newName);
+        String text = readTextFile(oldFile);
         writeFile(newFile, text);
         return newFile;
     }

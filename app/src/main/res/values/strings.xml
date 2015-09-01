@@ -18,5 +18,7 @@
     <string name="filetype">File type</string>
     <string name="back">Back</string>
     <string name="choose_file">Choose a file</string>
+    <string name="drawer_close">Close</string>
+    <string name="drawer_open">Open</string>
 
 </resources>
