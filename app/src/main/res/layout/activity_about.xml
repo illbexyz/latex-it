@@ -1,88 +1,84 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-android:orientation="vertical" android:layout_width="match_parent"
-android:layout_height="match_parent"
-android:paddingStart="16dp"
-android:paddingEnd="16dp"
-android:paddingLeft="16dp"
-android:paddingRight="16dp"
-android:paddingTop="16dp">
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingStart="16dp"
+    android:paddingEnd="16dp"
+    android:paddingLeft="16dp"
+    android:paddingRight="16dp"
+    android:paddingTop="16dp">
 
-<TextView
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:text="@string/developed_by"
-    android:id="@+id/async_http_title"
-    android:textSize="20sp" />
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/developed_by"
+        android:id="@+id/async_http_title"
+        android:textSize="20sp" />
 
-<TextView
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:text="@string/description_me"
-    android:id="@+id/async_http_license"
-    android:paddingTop="6dp"
-    android:textSize="16sp" />
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/description_me"
+        android:id="@+id/async_http_license"
+        android:paddingTop="6dp"
+        android:textSize="16sp" />
 
-<TextView
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:text="@string/my_mail"
-    android:id="@+id/my_mail"
-    android:paddingTop="6dp"
-    android:textSize="16sp"
-    android:autoLink="email"
-    android:drawableStart="@drawable/ic_email"
-    android:drawableLeft="@drawable/ic_email"
-    android:gravity="center_vertical" />
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/my_mail"
+        android:id="@+id/my_mail"
+        android:paddingTop="6dp"
+        android:textSize="16sp"
+        android:autoLink="email"
+        android:drawableStart="@drawable/ic_email"
+        android:drawableLeft="@drawable/ic_email"
+        android:gravity="center_vertical" />
 
-<TextView
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:text="@string/github_profile"
-    android:id="@+id/github_profile"
-    android:paddingTop="6dp"
-    android:textSize="16sp"
-    android:autoLink="web"
-    android:drawableStart="@drawable/ic_github_mark"
-    android:drawableLeft="@drawable/ic_github_mark"
-    android:gravity="center_vertical" />
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/github_profile"
+        android:id="@+id/github_profile"
+        android:paddingTop="6dp"
+        android:textSize="16sp"
+        android:drawableStart="@drawable/ic_github_mark"
+        android:drawableLeft="@drawable/ic_github_mark"
+        android:gravity="center_vertical" />
 
-<View
-    android:layout_width="fill_parent"
-    android:layout_height="1dp"
-    android:background="@color/text_darkgrey"
-    android:layout_marginTop="16dp"
-    android:layout_marginBottom="16dp"/>
+    <View
+        android:layout_width="fill_parent"
+        android:layout_height="1dp"
+        android:background="@color/text_darkgrey"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="16dp" />
 
-<TextView
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:text="@string/links"
-    android:id="@+id/async_http_titfle"
-    android:textSize="20sp" />
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/links"
+        android:textSize="20sp" />
 
-<TextView
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:text="@string/github_editor"
-    android:id="@+id/github_editor"
-    android:paddingTop="6dp"
-    android:textSize="16sp"
-    android:autoLink="web"
-    android:drawableStart="@drawable/ic_github_mark"
-    android:drawableLeft="@drawable/ic_github_mark"
-    android:gravity="center_vertical" />
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/github_editor"
+        android:id="@+id/github_editor"
+        android:paddingTop="6dp"
+        android:textSize="16sp"
+        android:drawableStart="@drawable/ic_github_mark"
+        android:drawableLeft="@drawable/ic_github_mark"
+        android:gravity="center_vertical" />
 
-<TextView
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:text="@string/github_server"
-    android:id="@+id/github"
-    android:paddingTop="6dp"
-    android:textSize="16sp"
-    android:autoLink="web"
-    android:drawableStart="@drawable/ic_github_mark"
-    android:drawableLeft="@drawable/ic_github_mark"
-    android:gravity="center_vertical" />
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/github_server"
+        android:id="@+id/github_server"
+        android:paddingTop="6dp"
+        android:textSize="16sp"
+        android:drawableStart="@drawable/ic_github_mark"
+        android:drawableLeft="@drawable/ic_github_mark"
+        android:gravity="center_vertical" />
 
 </LinearLayout>

@@ -21,9 +21,8 @@
     <string name="drawer_open">Open</string>
     <string name="about">About</string>
     <string name="open_source_title">Open Source Licenses</string>
-    <string name="google"><a href="http://www.google.com" >Google</a></string>
-    <string name="github_editor"><a href="http://www.google.com" >Github Latex Editor</a></string>
-    <string name="github_server"><a href="http://www.google.com" >Github Latex Server</a></string>
+    <string name="github_editor"><a href="https://github.com/albyxyz/latex-editor" >Github Latex Editor</a></string>
+    <string name="github_server"><a href="https://github.com/albyxyz/latex-server" >Github Latex Server</a></string>
     <string name="github_profile"><a href="https://github.com/albyxyz" >albyxyz</a></string>
     <string name="my_mail"><a href="mailto:albyx.n@gmail.com">albyx.n@gmail.com</a></string>
     <string name="developed_by">Developed by Alberto Nicoletti</string>
