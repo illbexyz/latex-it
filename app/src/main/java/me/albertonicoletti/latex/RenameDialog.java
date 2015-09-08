@@ -10,10 +10,10 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.EditText;
 
-import java.io.File;
-
 /**
  * Dialog showing an EditText for renaming a file.
+ *
+ * @author Alberto Nicoletti    albyx.n@gmail.com    https://github.com/albyxyz
  */
 public class RenameDialog extends DialogFragment {
 

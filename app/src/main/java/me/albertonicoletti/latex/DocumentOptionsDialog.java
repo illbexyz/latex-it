@@ -9,11 +9,14 @@ import android.os.Bundle;
 
 /**
  * Dialog showing the possible actions on documents
+ *
+ * @author Alberto Nicoletti    albyx.n@gmail.com    https://github.com/albyxyz
+ *
  */
 public class DocumentOptionsDialog extends DialogFragment {
 
     public interface DocumentDialogListener {
-        void onDialogDeleteClick(DialogFragment dialog, String path);
+        void onDialogRemoveClick(DialogFragment dialog, String path);
         void onDialogRenameClick(DialogFragment dialog, String path);
     }
 
@@ -38,9 +41,9 @@ public class DocumentOptionsDialog extends DialogFragment {
     }
 
     /**
-     * Creates the dialog. Bundle must contain a "filename" string.
-     * @param savedInstanceState Must contain a "filename" string.
-     * @return
+     * Creates the dialog. Bundle must contain a "filepath" string.
+     * @param savedInstanceState Must contain a "filepath" string.
+     * @return Dialog
      */
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
@@ -55,7 +58,7 @@ public class DocumentOptionsDialog extends DialogFragment {
                             case 0:
                                 mListener.onDialogRenameClick(DocumentOptionsDialog.this, path);
                             case 1:
-                                mListener.onDialogDeleteClick(DocumentOptionsDialog.this, path);
+                                mListener.onDialogRemoveClick(DocumentOptionsDialog.this, path);
                         }
                     }
                 });

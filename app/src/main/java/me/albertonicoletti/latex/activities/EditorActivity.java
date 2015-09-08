@@ -1,4 +1,4 @@
-package me.albertonicoletti.latex;
+package me.albertonicoletti.latex.activities;
 
 import android.app.ActionBar;
 import android.app.Activity;
@@ -19,8 +19,11 @@ import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.Editable;
+import android.text.SpannableString;
+import android.text.Spanned;
 import android.text.TextWatcher;
 import android.text.method.ScrollingMovementMethod;
+import android.text.style.RelativeSizeSpan;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.Menu;
@@ -28,7 +31,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.PopupMenu;
-import android.widget.PopupWindow;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -46,18 +48,33 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import me.albertonicoletti.latex.DataPersistenceUtil;
+import me.albertonicoletti.latex.DialogsUtil;
+import me.albertonicoletti.latex.Document;
+import me.albertonicoletti.latex.DocumentClickListener;
+import me.albertonicoletti.latex.DocumentOptionsDialog;
+import me.albertonicoletti.latex.DocumentsAdapter;
+import me.albertonicoletti.latex.LatexEditor;
+import me.albertonicoletti.latex.LatexNetClient;
+import me.albertonicoletti.latex.R;
+import me.albertonicoletti.latex.RenameDialog;
+import me.albertonicoletti.latex.VerticalScrollView;
+import me.albertonicoletti.utils.FilesUtils;
+import me.albertonicoletti.utils.ZipUtils;
+
+/**
+ * The main activity, it shows the editor.
+ *
+ * @author Alberto Nicoletti    albyx.n@gmail.com    https://github.com/albyxyz
+ */
 
 public class EditorActivity extends Activity implements DocumentClickListener.DocumentClickInterface,
-                                                        RenameDialog.RenameDialogListener,
-                                                        DocumentOptionsDialog.DocumentDialogListener {
+        RenameDialog.RenameDialogListener,
+        DocumentOptionsDialog.DocumentDialogListener {
 
     private ActionBarDrawerToggle mDrawerToggle;
     /** Left Drawer Layout */
     private DrawerLayout mDrawerLayout;
-    /** Recycler View containing the open documents */
-    private RecyclerView mDrawerList;
-    /** Recycler View layout manager */
-    private RecyclerView.LayoutManager documentsLayoutManager;
     /** Adapter for the Recycler View */
     private DocumentsAdapter documentsAdapter;
     /** A custom EditText */
@@ -66,42 +83,19 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
     private VerticalScrollView scrollView;
     /** List of the open documents */
     private LinkedList<Document> documents = new LinkedList<>();
-    /** List of the images */
-    //private LinkedList<LinkedList<File>> images = new LinkedList<>();
     /** The document the editor is showing */
     private Document document;
-
-    private PopupWindow popupWindow;
-
-    private boolean initialized = false;
-
+    /** Used to remember when back button is pressed */
     private long backPressed = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_editor);
-        Log.v("ACTIVITY", "Editor activity started");
         initPreferences();
         initDrawer();
         initEditor();
-
-        final Button button = (Button) findViewById(R.id.maths_button);
-        button.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                PopupMenu popup = new PopupMenu(EditorActivity.this, button);
-                popup.getMenuInflater().inflate(R.menu.menu_maths, popup.getMenu());
-                popup.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
-                    @Override
-                    public boolean onMenuItemClick(MenuItem menuItem) {
-                        insertSymbol(menuItem.getTitle().toString());
-                        return false;
-                    }
-                });
-                popup.show();
-            }
-        });
+        initSymbols();
 
         Uri fileUri = getIntent().getData();
         // If a URI is passed
@@ -112,7 +106,7 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
             documents = DataPersistenceUtil.readSavedOpenFiles(getApplicationContext());
             if(documents.isEmpty()) {
                 // If there's no open document it opens a new untitled file
-                document = new Document(FilesUtils.newFile());
+                document = new Document(FilesUtils.newUntitledFile());
             } else {
                 // Else it gets the first open document
                 for(Document d : documents){
@@ -120,15 +114,19 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
                         document = d;
                     }
                 }
+                // It should never go here, just in case of an error it opens the first file
                 if(document == null) {
                     document = documents.get(0);
                 }
             }
         }
-
         openDocumentInEditor(document);
     }
 
+    /**
+     * Initializes the preferences.
+     * Sets the default output directory and images directory the first time the app is launched.
+     */
     private void initPreferences(){
         String outputPath = FilesUtils.getDocumentsDir().getPath() + "/LatexOutput/";
         String imagesPath = FilesUtils.getDocumentsDir().getPath() + "/Images/";
@@ -146,18 +144,23 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
         prefsEdit.apply();
     }
 
+    /**
+     * Initializes the navigation drawer.
+     */
     private void initDrawer(){
         mDrawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
-        mDrawerList = (RecyclerView) findViewById(R.id.left_drawer);
+        /* Recycler View containing the open documents */
+        RecyclerView mDrawerList = (RecyclerView) findViewById(R.id.left_drawer);
         mDrawerList.setHasFixedSize(true);
         // Sets the layout manager
-        documentsLayoutManager = new LinearLayoutManager(this);
+        /* Recycler View layout manager */
+        RecyclerView.LayoutManager documentsLayoutManager = new LinearLayoutManager(this);
         mDrawerList.setLayoutManager(documentsLayoutManager);
         documentsAdapter = new DocumentsAdapter(documentsToFiles(),
                 new DocumentClickListener(this),
                 DocumentsAdapter.DRAWER);
         mDrawerList.setAdapter(documentsAdapter);
-        mDrawerLayout.openDrawer(Gravity.LEFT);
+        mDrawerLayout.openDrawer(Gravity.START);
         mDrawerToggle = new ActionBarDrawerToggle(
                 this,                  /* host Activity */
                 mDrawerLayout,         /* DrawerLayout object */
@@ -187,26 +190,22 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
         // Set the drawer toggle as the DrawerListener
         mDrawerLayout.setDrawerListener(mDrawerToggle);
         ActionBar actionBar = getActionBar();
-        if(actionBar!= null) {
+        if(actionBar != null) {
             actionBar.setDisplayHomeAsUpEnabled(true);
             actionBar.setHomeButtonEnabled(true);
         }
     }
 
-    private List<File> documentsToFiles() {
-        LinkedList<File> files = new LinkedList<>();
-        for(Document doc : documents) {
-            files.add(doc);
-        }
-        return files;
-    }
-
+    /**
+     * Initializes the editor.
+     */
     private void initEditor(){
         scrollView = (VerticalScrollView) findViewById(R.id.editor_scroll_view);
         editor = (LatexEditor) findViewById(R.id.editor);
-
+        // Sets the scrollview
         editor.setVerticalScrollBarEnabled(true);
         editor.setMovementMethod(new ScrollingMovementMethod());
+        // When the scroll stops, it will highlights the text
         scrollView.setScrollStoppedListener(new VerticalScrollView.ScrollStoppedListener() {
             @Override
             public void onStopped() {
@@ -214,30 +213,150 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
             }
         });
         editor.addTextChangedListener(new TextWatcher() {
+
+            private RelativeSizeSpan span;
+            private SpannableString spannable;
+
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
             }
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
+                // count > 0 means it's not a backspace
+                if (count > 0) {
+                    // It's a span that does nothing, used to mark where the text has changed
+                    span = new RelativeSizeSpan(1.0f);
+                    spannable = new SpannableString(s);
+                    spannable.setSpan(span, start, start + count, Spanned.SPAN_COMPOSING);
+                }
             }
 
             @Override
             public void afterTextChanged(Editable s) {
-                if (initialized) {
+                if (editor.getLayout() != null && spannable != null) {
+                    autoIndentEditor(s, spannable, span);
                     highlightEditor();
+                    // Cleanup
+                    span = null;
+                    spannable = null;
                 }
             }
         });
-        initialized = true;
     }
 
+    /**
+     * Initializes the symbols shortcut bar.
+     */
+    private void initSymbols(){
+        // It actually only initializes the "+" button, creating a popup menu
+        final Button button = (Button) findViewById(R.id.maths_button);
+        button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                // Shows a popup menu
+                PopupMenu popup = new PopupMenu(EditorActivity.this, button);
+                popup.getMenuInflater().inflate(R.menu.menu_maths, popup.getMenu());
+                popup.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
+                    @Override
+                    public boolean onMenuItemClick(MenuItem menuItem) {
+                        // On symbol click
+                        insertSymbol(menuItem.getTitle().toString());
+                        return false;
+                    }
+                });
+                popup.show();
+            }
+        });
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.menu_editor, menu);
+        return true;
+    }
+
+    @Override
+    protected void onPostCreate(Bundle savedInstanceState) {
+        super.onPostCreate(savedInstanceState);
+        // Sync the toggle state after onRestoreInstanceState has occurred.
+        mDrawerToggle.syncState();
+    }
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        mDrawerToggle.onConfigurationChanged(newConfig);
+    }
+
+    /**
+     * When the activity stops it saves the open documents.
+     */
     @Override
     protected void onStop() {
         DataPersistenceUtil.saveFilesPath(getApplicationContext(), documents);
         super.onStop();
     }
 
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (mDrawerToggle.onOptionsItemSelected(item)) {
+            return true;
+        }
+        int id = item.getItemId();
+
+        switch (id){
+            case R.id.action_settings:
+                startActivity(new Intent(this, SettingsActivity.class));
+                break;
+            case R.id.action_save:
+                saveFile();
+                break;
+            case R.id.action_pdf:
+                generatePDF();
+                break;
+            case R.id.action_about:
+                about();
+                break;
+            case R.id.action_open_source:
+                openSource();
+                break;
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
+
+    /**
+     * Used to maintain the same indentation as the upper line
+     * @param editable Text
+     * @param spannable Spannable
+     * @param span Modified span
+     */
+    private void autoIndentEditor(Editable editable, SpannableString spannable, RelativeSizeSpan span){
+        int beginIndex = spannable.getSpanStart(span);
+        int endIndex = spannable.getSpanEnd(span);
+        // If the last written character is a newline
+        if (editable.charAt(endIndex-1) == '\n') {
+            int lineModified = editor.getLayout().getLineForOffset(beginIndex);
+            int modifiedBeginIndex = editor.getLayout().getLineStart(lineModified);
+            int modifiedEndIndex = editor.getLayout().getLineEnd(lineModified);
+            String str = editable.subSequence(modifiedBeginIndex, modifiedEndIndex).toString();
+            // Collects the whitespaces and tabulations in the upper line
+            String whitespaces = "";
+            int i = 0;
+            while (str.charAt(i) == ' ' || str.charAt(i) == '\t') {
+                whitespaces += str.charAt(i);
+                i++;
+            }
+            // And inserts them in the newline
+            editable.insert(beginIndex + 1, whitespaces);
+        }
+    }
+
+    /**
+     * Highlights the text in the screen in the editor.
+     */
     private void highlightEditor(){
         int scrollY = scrollView.getScrollY();
         if (scrollY == -1) scrollY = 0;
@@ -248,11 +367,16 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
         editor.highlightText(start, end);
     }
 
+    /**
+     * Opens in the editor a document and adds it to the documents list
+     * @param document Document to open
+     */
     private void openDocumentInEditor(Document document){
         this.document.setOpen(false);
         document.setOpen(true);
         this.document = document;
         editor.setText("");
+        // Reads the file in a new thread and shows a loading dialog meanwhile
         new AsyncTask<File, Integer, String>(){
             ProgressDialog asyncDialog = new ProgressDialog(EditorActivity.this);
 
@@ -277,46 +401,23 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
             }
 
         }.execute(document);
-
+        // Adds the document to the document's list if it isn't there yet
         if(!documents.contains(document)){
             documents.add(document);
         }
         refreshTitleAndDrawer();
-        mDrawerLayout.closeDrawer(Gravity.LEFT);
+        mDrawerLayout.closeDrawer(Gravity.START);
     }
 
+    /**
+     * Checks the double back pressure to exit
+     */
     @Override
     public void onBackPressed() {
-//        if (popupWindow != null && popupWindow.isShowing()) {
-//            popupWindow.dismiss();
-//        } else {
         if(document.isLog()){
             removeDocument();
             openDocumentInEditor(documents.getFirst());
         } else {
-            /*
-            if (textModified) {
-                AlertDialog dialog = new AlertDialog.Builder(this).create();
-                dialog.setTitle("Unsaved File");
-                dialog.setMessage("You have unsaved changes in your file.\nDo you want to save them?");
-                dialog.setCancelable(false);
-                dialog.setButton(AlertDialog.BUTTON_NEGATIVE, "No", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialogInterface, int i) {
-                        EditorActivity.this.finish();
-                    }
-                });
-                dialog.setButton(AlertDialog.BUTTON_POSITIVE, "Yes", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialogInterface, int i) {
-                        saveFile(document);
-                        EditorActivity.this.finish();
-                    }
-                });
-                dialog.show();
-            } else {
-                super.onBackPressed();
-            }*/
             if (backPressed + 2000 > System.currentTimeMillis()){
                 saveFile();
                 super.onBackPressed();
@@ -325,9 +426,12 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
                 backPressed = System.currentTimeMillis();
             }
         }
-//        }
     }
 
+    /**
+     * Used to highlight the editor on startup
+     * @param hasFocus Has focus
+     */
     @Override
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
@@ -346,6 +450,11 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
         }
     }
 
+    /**
+     * Renames a document
+     * @param oldPath Old path
+     * @param newFilename New filename
+     */
     private void renameFile(String oldPath, String newFilename){
         String name = ensureTexExtension(newFilename);
         Document oldDocument = new Document(oldPath);
@@ -366,6 +475,11 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
         refreshTitleAndDrawer();
     }
 
+    /**
+     * Returns the filename having a .tex suffix.
+     * @param name Filename
+     * @return .tex filename
+     */
     private String ensureTexExtension(String name){
         if(!name.endsWith(".tex")){
             int lastIndex;
@@ -391,11 +505,33 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
         documentsAdapter.refresh(documentsToFiles());
     }
 
+    /**
+     * Launches the about activity
+     */
+    private void about(){
+        Intent intent = new Intent(this, AboutActivity.class);
+        startActivity(intent);
+    }
+
+    /**
+     * Launches the open source licenses activity
+     */
+    private void openSource(){
+        Intent intent = new Intent(this, OpenSourceLicencesActivity.class);
+        startActivity(intent);
+    }
+
+    /**
+     * Routine that searches for the images used in the current document, zips them with the file
+     * and sends it to the server.
+     * It will show the response pdf or log.
+     */
     private void generatePDF(){
         saveFile();
         if(!editor.getTextString().equals("")) {
             Toast.makeText(this, "Compressing and sending files...", Toast.LENGTH_SHORT).show();
             SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
+            // Creates the folders if they not exists
             final String imagesFolderPath = sharedPref.getString(SettingsActivity.IMAGES_FOLDER, "");
             final String outputFolderPath = sharedPref.getString(SettingsActivity.OUTPUT_FOLDER, "");
             File imagesFolder = new File(imagesFolderPath);
@@ -406,13 +542,11 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
             if(!outputFolder.exists()){
                 FilesUtils.newDirectory(outputFolderPath);
             }
-
+            // Searches for the images
             final LinkedList<String> imagesFilenames = new LinkedList<>();
             String editorText = editor.getTextString();
-
             Pattern pattern = Pattern.compile("(?<=\\\\includegraphics).*\\{.*\\}", Pattern.MULTILINE);
             Matcher matcher = pattern.matcher(editorText);
-
             while (matcher.find()) {
                 if (matcher.group().length() > 0) {
                     String group = matcher.group();
@@ -429,10 +563,10 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
                     return imagesFilenames.contains(filenameNoExt);
                 }
             };
-
             File[] images = imagesFolder.listFiles(filter);
             File[] files = Arrays.copyOf(images, images.length + 1);
             files[files.length - 1] = document;
+            // Zips the files
             File zip = ZipUtils.newZipFile(outputFolderPath + document.getName(), files);
             zip.deleteOnExit();
             RequestParams params = new RequestParams();
@@ -441,28 +575,30 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
-
             LatexNetClient.post("latex", params, new FileAsyncHttpResponseHandler(this) {
                 @Override
                 public void onFailure(int i, Header[] headers, Throwable throwable, File file) {
+                    // On failure shows an error toast
                     Toast.makeText(getApplicationContext(), "Something went wrong",
                             Toast.LENGTH_LONG).show();
-                    Log.e("NET", throwable.getMessage() + "");
+                    Log.e("LATEX_NET", throwable.getMessage() + "");
                 }
 
                 @Override
                 public void onSuccess(int i, Header[] headers, final File file) {
                     final Document receivedDocument = new Document(file);
                     Header header = null;
+                    // Retrieves the content-type header
                     for (Header h : headers) {
                         if (h.getName().equals("Content-Type")) {
                             header = h;
                             break;
                         }
                     }
-
                     assert header != null;
+                    // If it's a PDF, the compile succeeded
                     if (header.getValue().equals("application/pdf")) {
+                        // Saves the file in the output directory and tries to open it
                         byte[] bytes = FilesUtils.readBinaryFile(file);
                         String pdfName = document.getName().substring(0, document.getName().lastIndexOf(".")) + ".pdf";
                         File pdf = new File(outputFolderPath, pdfName);
@@ -478,6 +614,7 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
                                     Toast.LENGTH_LONG).show();
                         }
                     } else {
+                        // Asks to open the log
                         final AlertDialog dialog = new AlertDialog.Builder(EditorActivity.this).create();
                         dialog.setTitle("Unsaved File");
                         dialog.setMessage("Latex compiling has failed.\nDo you wish to open the log?");
@@ -500,31 +637,38 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
                 }
             });
         } else {
+            // Empty file
             Toast.makeText(getApplicationContext(), "Can't compile an empty file!",
                     Toast.LENGTH_LONG).show();
         }
     }
 
-    public void onOpenClick(View view) {
-        Intent intent = new Intent(this, FileChooserActivity.class);
-        startActivityForResult(intent, 1);
-        /*Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-        intent.setType("file/*");
-        startActivityForResult(intent, 1);*/
-    }
-
+    /**
+     * On a symbol click, inserts it in the editor
+     * @param view View
+     */
     public void onSymbolClick(View view) {
         Button button = (Button) view;
         String symbol = button.getText().toString();
         insertSymbol(symbol);
     }
 
+    /**
+     * Inserts a symbol in the editor
+     * @param symbol Symbol
+     */
     private void insertSymbol(String symbol){
         int selection = Math.max(0, editor.getSelectionStart());
         editor.getText().insert(selection, symbol);
         editor.setSelection(selection + 1);
     }
 
+    /**
+     * Called when returning from the file picker activity, it opens in the editor the returned file
+     * @param requestCode Request code
+     * @param resultCode Result code
+     * @param data Data
+     */
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if(data != null) {
@@ -538,59 +682,79 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
         super.onActivityResult(requestCode, resultCode, data);
     }
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_editor, menu);
-        return true;
+    /**
+     * On new file click, it opens an empty file in the editor
+     * @param view View
+     */
+    public void onNewFileClick(View view) {
+        Document file = new Document(FilesUtils.newUntitledFile());
+        openDocumentInEditor(file);
     }
 
-    @Override
-    protected void onPostCreate(Bundle savedInstanceState) {
-        super.onPostCreate(savedInstanceState);
-        // Sync the toggle state after onRestoreInstanceState has occurred.
-        mDrawerToggle.syncState();
+    /**
+     * On open file click, starts the file picker activity
+     * @param view View
+     */
+    public void onOpenClick(View view) {
+        Intent intent = new Intent(this, FileChooserActivity.class);
+        startActivityForResult(intent, 1);
     }
 
-    @Override
-    public void onConfigurationChanged(Configuration newConfig) {
-        super.onConfigurationChanged(newConfig);
-        mDrawerToggle.onConfigurationChanged(newConfig);
+    /**
+     * Removes the current document from the documents list
+     */
+    private void removeDocument(){
+        removeDocument(document);
     }
 
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        if (mDrawerToggle.onOptionsItemSelected(item)) {
-            return true;
+    /**
+     * Removes a document from the documents list
+     * @param document Document to remove
+     */
+    private void removeDocument(Document document){
+        documents.remove(document);
+        if(document.getPath().equals(document.getPath())){
+            // If the current document is removed, it opens a new file in the editor
+            if(documents.size() > 0){
+                document = documents.getFirst();
+            } else {
+                document = new Document(FilesUtils.newUntitledFile());
+            }
         }
-        int id = item.getItemId();
-
-        switch (id){
-            case R.id.action_settings:
-                startActivity(new Intent(this, SettingsActivity.class));
-                break;
-            case R.id.action_save:
-                saveFile();
-                break;
-            case R.id.action_pdf:
-                generatePDF();
-                break;
-        }
-
-        return super.onOptionsItemSelected(item);
+        openDocumentInEditor(document);
     }
 
+    /**
+     * Routine to convert the Documents list to an equivalent File list
+     * @return File list
+     */
+    private List<File> documentsToFiles() {
+        LinkedList<File> files = new LinkedList<>();
+        for(Document doc : documents) {
+            files.add(doc);
+        }
+        return files;
+    }
+
+    /**
+     * On clicking a document in the drawer, it opens it in the editor
+     * @param view View
+     */
     @Override
-    public void onDocumentClickListener(View v) {
-        TextView textView = (TextView) v.findViewById(R.id.drawer_file_path);
+    public void onDocumentClickListener(View view) {
+        TextView textView = (TextView) view.findViewById(R.id.drawer_file_path);
         String filePath = textView.getText().toString();
         openDocumentInEditor(documents.get(documents.indexOf(new Document(filePath))));
-        mDrawerLayout.closeDrawer(Gravity.LEFT);
+        mDrawerLayout.closeDrawer(Gravity.START);
     }
 
+    /**
+     * On long clicking a document in the drawer, it shows a dialog asking what to do
+     * @param view View
+     */
     @Override
-    public void onDocumentLongClickListener(View v) {
-        TextView m = (TextView) v.findViewById(R.id.drawer_file_path);
+    public void onDocumentLongClickListener(View view) {
+        TextView m = (TextView) view.findViewById(R.id.drawer_file_path);
         Bundle args = new Bundle();
         // Adds a "filename" parameter containing the filename
         args.putString("filepath", m.getText().toString());
@@ -601,26 +765,26 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
         dialog.show(getFragmentManager(), "editor_drawer_longclick");
     }
 
-    public void onNewFileClick(View view) {
-        Document file = new Document(FilesUtils.newFile());
-        openDocumentInEditor(file);
-    }
-
-    private void removeDocument(){
+    /**
+     * On confirming to remove a file
+     * @param dialog Dialog
+     * @param path File to rename
+     */
+    @Override
+    public void onDialogRemoveClick(DialogFragment dialog, String path) {
+        Document document = new Document(path);
         removeDocument(document);
     }
 
-    private void removeDocument(File file){
-        documents.remove(file);
-        if(file.getPath().equals(document.getPath())){
-            if(documents.size() > 0){
-                document = documents.getFirst();
-            } else {
-                document = new Document(FilesUtils.newFile());
-            }
-        }
-        refreshTitleAndDrawer();
-        openDocumentInEditor(document);
+    /**
+     * Shows a renaming dialog
+     * @param dialog Dialog
+     * @param path File to rename
+     */
+    @Override
+    public void onDialogRenameClick(DialogFragment dialog, String path) {
+        Document document = new Document(path);
+        DialogsUtil.showRenameDialog(this, document);
     }
 
     /**
@@ -634,17 +798,5 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
         if(newFilename.length() > 0) {
             renameFile(oldPath, newFilename);
         }
-    }
-
-    @Override
-    public void onDialogDeleteClick(DialogFragment dialog, String path) {
-        File file = new File(path);
-        removeDocument(file);
-    }
-
-    @Override
-    public void onDialogRenameClick(DialogFragment dialog, String path) {
-        File file = new File(path);
-        DialogsUtil.showRenameDialog(this, file);
     }
 }

@@ -1,4 +1,4 @@
-package me.albertonicoletti.latex;
+package me.albertonicoletti.utils;
 
 import android.util.Log;
 

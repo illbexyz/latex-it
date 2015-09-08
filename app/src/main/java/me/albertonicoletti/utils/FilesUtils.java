@@ -1,4 +1,4 @@
-package me.albertonicoletti.latex;
+package me.albertonicoletti.utils;
 
 import android.content.Context;
 import android.net.Uri;
@@ -18,47 +18,26 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.LinkedList;
 import java.util.Scanner;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 
 /**
- * Utility class that provide utilities for managing files.
+ * Utility class providing utilities for managing files.
+ *
+ * @author Alberto Nicoletti    albyx.n@gmail.com    https://github.com/albyxyz
  */
 public class FilesUtils {
 
     static int filesNumber = 0;
 
     /**
-     * Convenient method to create a new Latex file and save it in Documents folder.
+     * Convenient method to create a new Latex file in Documents folder.
      * @return Latex file created
      */
-    public static File newFile(){
-        /*File newDoc = null;
-        Integer seedNumber = 0;
-        // Checking if I can write on external storage
-        Log.v("FILE", "Checking if I can write on external storage");
-        if(isExternalStorageWritable()){
-            File directoryPath = getDocumentsDir();
-            String filename;
-            // Incrementing seedNumber until there's no file having that name
-            do{
-                filename = "untitled" + seedNumber + ".tex";
-                Log.v("FILE", "Trying to open " + filename + " file");
-                newDoc = new File(filename);
-                seedNumber++;
-            } while(newDoc.exists());
-
-            newDoc = newFile(filename);
-
-        } else {
-            Log.e("FILE", "Can't write on external storage");
+    public static File newUntitledFile(){
+        File file = new File(getDocumentsDir(), "untitled" + filesNumber++);
+        while(file.exists()){
+            file = new File(getDocumentsDir(), "untitled" + filesNumber++);
         }
 
-        return newDoc;*/
-        File file;
-        do {
-            file = new File(getDocumentsDir(), "untitled" + filesNumber++);
-        } while(file.exists());
         return newFile(getDocumentsDir(), file.getName());
     }
 
@@ -72,10 +51,8 @@ public class FilesUtils {
         // Checking if I can write on external storage
         Log.v("FILE", "Checking if I can write on external storage");
         if(isExternalStorageWritable()){
-            File directoryPath = getDocumentsDir();
-
             Log.v("FILE", "Trying to open " + name + " file");
-            newDoc = new File(name);
+            newDoc = new File(directory, name);
             Log.v("FILE", "Filename: " + name);
         } else {
             Log.e("FILE", "Can't write on external storage");
@@ -83,23 +60,17 @@ public class FilesUtils {
         return newDoc;
     }
 
+    /**
+     * Creates a new directory
+     * @param path Directory path
+     * @return File directory
+     */
     public static File newDirectory(String path){
         File directory = new File(path);
         if(!directory.exists()){
-            directory.mkdir();
+            boolean result = directory.mkdir();
         }
         return directory;
-    }
-
-    public static File getFileInternalMemory(Context context, String filename){
-        File internalFile = new File(context.getFilesDir(), filename);
-        return internalFile;
-    }
-
-    public static void saveFileInternalMemory(Context context, File file){
-        File internalFile = new File(context.getFilesDir(), file.getName());
-        String toSave = readTextFile(file);
-        writeFile(internalFile, toSave);
     }
 
     /**
@@ -107,9 +78,13 @@ public class FilesUtils {
      * @param file File to delete
      */
     public static void deleteFile(File file){
-        file.delete();
+        boolean result = file.delete();
     }
 
+    /**
+     * Deletes every file inside the given directory
+     * @param directory Directory containing the files to delete
+     */
     public static void deleteFileInDirectory(File directory){
         File[] files = directory.listFiles();
         for(File f : files){
@@ -117,10 +92,19 @@ public class FilesUtils {
         }
     }
 
+    /**
+     * Deletes the file inside the app's directory
+     * @param context Context
+     */
     public static void deleteInternalFiles(Context context){
         deleteFileInDirectory(context.getFilesDir());
     }
 
+    /**
+     * Reads a text file and returns it's content
+     * @param file File to read
+     * @return File content
+     */
     public static String readTextFile(File file){
         String fileContent = "";
         Log.v("FILE", "Trying to read file: " + file.getPath());
@@ -187,6 +171,11 @@ public class FilesUtils {
         }
     }
 
+    /**
+     * Writes the given string inside the given file
+     * @param file File to write
+     * @param string String to write
+     */
     public static void writeFile(File file, String string){
         try {
             BufferedWriter writer = new BufferedWriter(new FileWriter(file));
@@ -198,6 +187,12 @@ public class FilesUtils {
         }
     }
 
+    /**
+     * Saves an untitled file
+     * @param oldPath Old path
+     * @param newName New path
+     * @return The new file
+     */
     public static File saveFileRenaming(String oldPath, String newName){
         File oldFile = new File(oldPath);
         File newFile = new File(getDocumentsDir(), newName);
@@ -208,13 +203,14 @@ public class FilesUtils {
 
     /**
      * Renames the given filename to newName
-     * @param file
-     * @param newName
+     * @param file File to rename
+     * @param newName New name
+     * @return New file
      */
     public static File renameFile(File file, String newName){
         File directory = getDocumentsDir();
         File newFile = new File(directory, newName);
-        file.renameTo(newFile);
+        boolean result = file.renameTo(newFile);
         file = newFile;
         return file;
     }
@@ -264,7 +260,6 @@ public class FilesUtils {
         File[] files = directory.listFiles();
         for(File file : files){
             if(file.isDirectory()){
-                String filename = file.getName();
                 directories.add(file);
             }
         }
@@ -277,12 +272,12 @@ public class FilesUtils {
      */
     public static File getDocumentsDir() {
         // Get the directory for the user's public pictures directory.
-        File directory = Environment.getExternalStoragePublicDirectory(
-                Environment.DIRECTORY_DOCUMENTS);
-        if(!directory.exists()){
-            directory.mkdir();
+        File root = Environment.getExternalStorageDirectory();
+        File documentsdir = new File(root, "Documents");
+        if(!documentsdir.exists()){
+            boolean result = documentsdir.mkdir();
         }
-        return directory;
+        return documentsdir;
     }
 
     /**
@@ -308,43 +303,6 @@ public class FilesUtils {
         File file = new File(directory, filename);
         fileUri = Uri.fromFile(file);
         return fileUri;
-    }
-
-    /**
-     *
-     * @param files
-     * @return
-     */
-    public static File zipFiles(LinkedList<File> files){
-        final int BUFFER = 2048;
-        File zip = new File(getDocumentsDir(), "zip.zip");
-        try {
-            BufferedInputStream origin = null;
-            FileOutputStream dest = new FileOutputStream(zip);
-
-            ZipOutputStream out = new ZipOutputStream(new BufferedOutputStream(dest));
-
-            byte data[] = new byte[BUFFER];
-
-            for(File f : files){
-                Log.v("Compress", "Adding: " + f);
-                FileInputStream fi = new FileInputStream(f);
-                origin = new BufferedInputStream(fi, BUFFER);
-                ZipEntry entry = new ZipEntry(f.getPath().substring(f.getPath().lastIndexOf("/") + 1));
-                out.putNextEntry(entry);
-                int count;
-                while ((count = origin.read(data, 0, BUFFER)) != -1) {
-                    out.write(data, 0, count);
-                }
-                origin.close();
-            }
-
-            out.close();
-        } catch(Exception e) {
-            e.printStackTrace();
-        }
-        return zip;
-
     }
 
     /**

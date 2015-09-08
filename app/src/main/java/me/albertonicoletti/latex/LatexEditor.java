@@ -17,13 +17,11 @@ import java.util.regex.Pattern;
 /**
  * The editor, an EditText with extended functionality:
  * - Line count
+ * - Syntax highlighting
+ *
+ * @author Alberto Nicoletti    albyx.n@gmail.com    https://github.com/albyxyz
  */
 public class LatexEditor extends EditText {
-
-    /*public final Pattern commandsPattern = Pattern.compile("([\\\\])\\w+(\\*)*", Pattern.MULTILINE);
-    public final Pattern keywordsPattern = Pattern.compile("([{]).+([}])", Pattern.MULTILINE);
-    public final Pattern thirdPattern = Pattern.compile("([\\[]).+([\\]])", Pattern.MULTILINE);
-    public final Pattern commentsPattern = Pattern.compile("(%).*$", Pattern.MULTILINE);*/
 
     public final Pattern[] patterns = { Pattern.compile("([\\\\])\\w+(\\*)*", Pattern.MULTILINE),
                                         Pattern.compile("([{]).+([}])", Pattern.MULTILINE),
@@ -67,6 +65,11 @@ public class LatexEditor extends EditText {
         lineCounterColumnMargin = lineCounterColumnWidth/6;
     }
 
+    /**
+     * Highlights the text using Latex syntax
+     * @param start Start index
+     * @param end End index
+     */
     public void highlightText(int start, int end){
         Editable editable = getText();
         clearSpans(editable);

@@ -1,6 +1,6 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    tools:context="me.albertonicoletti.latex.EditorActivity">
+    tools:context="me.albertonicoletti.latex.activities.EditorActivity">
 
     <item android:id="@+id/action_save"
         android:icon="@drawable/save_image"
@@ -12,8 +12,18 @@
         android:title="@string/generate_pdf"
         android:showAsAction="ifRoom" />
 
+    <item android:id="@+id/action_about"
+        android:title="@string/about"
+        android:orderInCategory="100"
+        android:showAsAction="never" />
+
+    <item android:id="@+id/action_open_source"
+        android:title="@string/open_source_title"
+        android:orderInCategory="100"
+        android:showAsAction="never" />
+
     <item android:id="@+id/action_settings"
-        android:title="@string/action_settings"
+        android:title="@string/settings"
         android:orderInCategory="100"
         android:showAsAction="never" />
 </menu>

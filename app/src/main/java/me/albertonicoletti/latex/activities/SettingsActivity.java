@@ -1,10 +1,14 @@
-package me.albertonicoletti.latex;
+package me.albertonicoletti.latex.activities;
 
 import android.app.Activity;
 import android.os.Bundle;
 
+import me.albertonicoletti.latex.SettingsFragment;
+
 /**
- * Created by alberto on 09/08/15.
+ * Settings activity.
+ *
+ * @author Alberto Nicoletti    albyx.n@gmail.com    https://github.com/albyxyz
  */
 public class SettingsActivity extends Activity  {
 

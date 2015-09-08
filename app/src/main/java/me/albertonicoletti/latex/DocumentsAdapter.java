@@ -17,6 +17,9 @@ import java.util.Locale;
 
 /**
  * Adapter for the Documents RecyclerView
+ *
+ * @author Alberto Nicoletti    albyx.n@gmail.com    https://github.com/albyxyz
+ *
  */
 public class DocumentsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
@@ -95,13 +98,13 @@ public class DocumentsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
 
     /**
      * Performed when creating a new view for an element.
-     * @param parent
-     * @param viewType
-     * @return
+     * @param parent Parent ViewGroup
+     * @param viewType ViewType
+     * @return ViewHolder
      */
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        RecyclerView.ViewHolder viewHolder = null;
+        RecyclerView.ViewHolder viewHolder;
         if(viewType == DocumentsAdapter.DRAWER){
             View view = LayoutInflater.from(parent.getContext())
                     .inflate(R.layout.drawer_list_item, parent, false);

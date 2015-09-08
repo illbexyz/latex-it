@@ -5,6 +5,9 @@ import android.view.View;
 
 /**
  * Listener for onClick and onLongClick events over a Document' view
+ *
+ * @author Alberto Nicoletti    albyx.n@gmail.com    https://github.com/albyxyz
+ *
  */
 public class DocumentClickListener implements View.OnClickListener, View.OnLongClickListener {
 

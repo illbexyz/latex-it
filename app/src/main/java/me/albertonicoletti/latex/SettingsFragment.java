@@ -1,17 +1,17 @@
 package me.albertonicoletti.latex;
 
-import android.annotation.SuppressLint;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.EditTextPreference;
 import android.preference.ListPreference;
-import android.preference.MultiSelectListPreference;
 import android.preference.Preference;
 import android.preference.PreferenceFragment;
 import android.preference.PreferenceGroup;
 
 /**
- * Created by alberto on 09/08/15.
+ * Settings fragment.
+ *
+ * @author Alberto Nicoletti    albyx.n@gmail.com    https://github.com/albyxyz
  */
 public class SettingsFragment extends PreferenceFragment implements
                                             SharedPreferences.OnSharedPreferenceChangeListener {
@@ -19,21 +19,22 @@ public class SettingsFragment extends PreferenceFragment implements
     public static final String IMAGES_FOLDER = "images_folder";
     public static final String OUTPUT_FOLDER = "output_folder";
 
-    @SuppressLint("CommitPrefEdits")
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
         // Load the preferences from an XML resource
         addPreferencesFromResource(R.xml.preferences);
         getPreferenceManager().getSharedPreferences().registerOnSharedPreferenceChangeListener(this);
     }
 
+    /**
+     * On resume it update every settings.
+     */
     @Override
     public void onResume() {
         super.onResume();
         getPreferenceManager().getSharedPreferences().registerOnSharedPreferenceChangeListener(this);
-        for (int i = 0; i < getPreferenceScreen().getPreferenceCount(); ++i) {
+        for (int i = 0; i < getPreferenceScreen().getPreferenceCount(); i++) {
             Preference preference = getPreferenceScreen().getPreference(i);
             if (preference instanceof PreferenceGroup) {
                 PreferenceGroup preferenceGroup = (PreferenceGroup) preference;
@@ -53,6 +54,10 @@ public class SettingsFragment extends PreferenceFragment implements
         super.onPause();
     }
 
+    /**
+     * Updates a given preference.
+     * @param p Preference to update
+     */
     private void updatePreference(Preference p) {
         if (p instanceof ListPreference) {
             ListPreference listPref = (ListPreference) p;
@@ -60,33 +65,40 @@ public class SettingsFragment extends PreferenceFragment implements
         }
         if (p instanceof EditTextPreference) {
             EditTextPreference editTextPref = (EditTextPreference) p;
-            if (p.getTitle().toString().contains("assword"))
+            if (p.getTitle().toString().contains("password"))
             {
                 p.setSummary("******");
             } else {
                 p.setSummary(editTextPref.getText());
             }
         }
-        if (p instanceof MultiSelectListPreference) {
-            EditTextPreference editTextPref = (EditTextPreference) p;
-            p.setSummary(editTextPref.getText());
-        }
     }
 
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-        //TODO: Ensure final / on folders
         switch (key){
             case IMAGES_FOLDER:
                 EditTextPreference imagesFolder = (EditTextPreference) findPreference(IMAGES_FOLDER);
-                imagesFolder.setSummary(imagesFolder.getText());
+                imagesFolder.setSummary(ensureFolderSlash(imagesFolder.getText()));
                 break;
             case OUTPUT_FOLDER:
                 EditTextPreference outputFolder = (EditTextPreference) findPreference(OUTPUT_FOLDER);
-                String value = outputFolder.getText();
-                outputFolder.setSummary(value);
+                outputFolder.setSummary(ensureFolderSlash(outputFolder.getText()));
                 break;
         }
+    }
+
+    /**
+     * Checks if the folder path finishes with /.
+     * If not, it will add a final /.
+     * @param folder Folder path
+     * @return Correct folder path
+     */
+    private String ensureFolderSlash(String folder){
+        if(!folder.endsWith("/")){
+            folder += "/";
+        }
+        return folder;
     }
 
 }
