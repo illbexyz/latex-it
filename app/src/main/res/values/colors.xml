@@ -12,6 +12,7 @@
     <item name="darkorange" type="color">#FFFF8800</item>
     <item name="darkred" type="color">#FFCC0000</item>
     <item name="black" type="color">#161711</item>
+    <item name="white" type="color">#FFFFFF</item>
 
     <item name="teal" type="color">#FF009688</item>
     <item name="darkteal" type="color">#FF004D40</item>

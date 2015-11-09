@@ -3,13 +3,15 @@
     <!-- Base application theme. -->
     <style name="AppTheme" parent="android:style/Theme.Holo">
         <item name="android:actionBarStyle">@style/MyActionBar</item>
+        <item name="android:actionModeBackground">@color/primary</item>
     </style>
 
     <!-- ActionBar styles -->
     <style name="MyActionBar"
-        parent="@android:style/Widget.Holo.Light.ActionBar.Solid.Inverse">
+        parent="@android:style/Widget.Holo.ActionBar.Solid">
         <item name="android:background">@drawable/actionbar_background</item>
+        <item name="android:textColor">@color/white</item>
     </style>
 
-    <drawable name="actionbar_background">#009688</drawable>
+    <drawable name="actionbar_background">@color/primary</drawable>
 </resources>

@@ -202,9 +202,6 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
     private void initEditor(){
         scrollView = (VerticalScrollView) findViewById(R.id.editor_scroll_view);
         editor = (LatexEditor) findViewById(R.id.editor);
-        // Sets the scrollview
-        editor.setVerticalScrollBarEnabled(true);
-        editor.setMovementMethod(new ScrollingMovementMethod());
         // When the scroll stops, it will highlights the text
         scrollView.setScrollStoppedListener(new VerticalScrollView.ScrollStoppedListener() {
             @Override

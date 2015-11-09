@@ -24,15 +24,15 @@ import java.util.regex.Pattern;
 public class LatexEditor extends EditText {
 
     public final Pattern[] patterns = { Pattern.compile("([\\\\])\\w+(\\*)*", Pattern.MULTILINE),
-                                        Pattern.compile("([{]).+([}])", Pattern.MULTILINE),
-                                        Pattern.compile("([\\[]).+([\\]])", Pattern.MULTILINE),
-                                        Pattern.compile("(%).*$", Pattern.MULTILINE)
+            Pattern.compile("([{]).+([}])", Pattern.MULTILINE),
+            Pattern.compile("([\\[]).+([\\]])", Pattern.MULTILINE),
+            Pattern.compile("(%).*$", Pattern.MULTILINE)
     };
 
     public final int[] patternColors = {getResources().getColor(R.color.latex_class),
-                                        getResources().getColor(R.color.latex_keyword),
-                                        getResources().getColor(R.color.latex_third),
-                                        getResources().getColor(R.color.text_grey)
+            getResources().getColor(R.color.latex_keyword),
+            getResources().getColor(R.color.latex_third),
+            getResources().getColor(R.color.text_grey)
     };
 
     /** Painter used to draw numbers */
@@ -49,8 +49,22 @@ public class LatexEditor extends EditText {
     /** Line counter's column right margin (the margin before the text starts) */
     private int lineCounterColumnMargin;
 
+    public LatexEditor(Context context) {
+        super(context);
+        init();
+    }
+
+    public LatexEditor(Context context, AttributeSet attrs, int defStyle) {
+        super(context, attrs, defStyle);
+        init();
+    }
+
     public LatexEditor(Context context, AttributeSet attrs) {
         super(context, attrs);
+        init();
+    }
+
+    private void init(){
         // Number's color
         numberPainter.setColor(getResources().getColor(R.color.text_grey));
         lineHeight = getLineHeight();
@@ -120,7 +134,7 @@ public class LatexEditor extends EditText {
                     previousLineNoNewline = true;
                 }
                 lineToDraw++;
-            // When it finds a line containing a newline charcater, the next line will be drawn
+                // When it finds a line containing a newline charcater, the next line will be drawn
             } else {
                 if (containsNewLine) {
                     previousLineNoNewline = false;
@@ -150,7 +164,6 @@ public class LatexEditor extends EditText {
                 0,
                 e.length(),
                 BackgroundColorSpan.class );
-
         for( int n = spans.length; n-- > 0; )
             e.removeSpan( spans[n] );
         */

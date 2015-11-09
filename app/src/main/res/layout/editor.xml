@@ -14,15 +14,13 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:bufferType="spannable"
-        android:textCursorDrawable="@null"
-        android:cursorVisible="true"
         android:gravity="start|top"
-        android:singleLine="false"
         android:background="@color/editor_background"
         android:textColor="@color/editor_text"
-        android:text=""
-        android:textSize="12dp"
-        android:inputType="text|textNoSuggestions|textMultiLine"
-        android:paddingLeft="30dp" />
+        android:textSize="12sp"
+        android:inputType="textNoSuggestions|text|textMultiLine"
+        android:paddingLeft="30dp"
+        android:longClickable="true"
+        android:cursorVisible="true" />
 
 </me.albertonicoletti.latex.VerticalScrollView>
