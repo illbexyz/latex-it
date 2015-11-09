@@ -23,16 +23,22 @@ import java.util.regex.Pattern;
  */
 public class LatexEditor extends EditText {
 
-    public final Pattern[] patterns = { Pattern.compile("([\\\\])\\w+(\\*)*", Pattern.MULTILINE),
+    public final Pattern[] patterns = {
+            Pattern.compile("([\\\\])(\\w+|['`\\\\]\\w*)(\\*)*", Pattern.MULTILINE),
             Pattern.compile("([{]).+([}])", Pattern.MULTILINE),
             Pattern.compile("([\\[]).+([\\]])", Pattern.MULTILINE),
-            Pattern.compile("(%).*$", Pattern.MULTILINE)
+            Pattern.compile("(%).*$", Pattern.MULTILINE),
+            Pattern.compile("\\$([^\\$]*)\\$", Pattern.MULTILINE),
+            Pattern.compile("\\$", Pattern.MULTILINE)
     };
 
-    public final int[] patternColors = {getResources().getColor(R.color.latex_class),
+    public final int[] patternColors = {
+            getResources().getColor(R.color.latex_class),
             getResources().getColor(R.color.latex_keyword),
             getResources().getColor(R.color.latex_third),
-            getResources().getColor(R.color.text_grey)
+            getResources().getColor(R.color.text_grey),
+            getResources().getColor(R.color.green),
+            getResources().getColor(R.color.light_green)
     };
 
     /** Painter used to draw numbers */
