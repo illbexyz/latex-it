@@ -137,9 +137,9 @@ public class DocumentsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
             String lastModified = sdf.format(documentsList.get(position).lastModified());
             documentViewHolder.documentLastModifiedView.setText(lastModified);
             if(documentsList.get(position).isDirectory()){
-                documentViewHolder.fileTypeImage.setImageResource(R.drawable.open_document_image);
+                documentViewHolder.fileTypeImage.setImageResource(R.drawable.ic_folder_open_white_24dp);
             } else {
-                documentViewHolder.fileTypeImage.setImageResource(R.drawable.document_image);
+                documentViewHolder.fileTypeImage.setImageResource(R.drawable.ic_description_white_24dp);
             }
         }
 

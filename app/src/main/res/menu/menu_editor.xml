@@ -3,12 +3,12 @@
     tools:context="me.albertonicoletti.latex.activities.EditorActivity">
 
     <item android:id="@+id/action_save"
-        android:icon="@drawable/save_image"
+        android:icon="@drawable/ic_save_white_24dp"
         android:title="@string/save_document"
         android:showAsAction="ifRoom" />
 
     <item android:id="@+id/action_pdf"
-        android:icon="@drawable/ic_action_pdf"
+        android:icon="@drawable/ic_picture_as_pdf_white_24dp"
         android:title="@string/generate_pdf"
         android:showAsAction="ifRoom" />
 
