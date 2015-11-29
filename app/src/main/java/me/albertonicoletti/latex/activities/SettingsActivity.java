@@ -12,6 +12,7 @@ import me.albertonicoletti.latex.SettingsFragment;
  */
 public class SettingsActivity extends Activity  {
 
+    public static final String FONT_SIZE = "font_size";
     public static final String IMAGES_FOLDER = "images_folder";
     public static final String OUTPUT_FOLDER = "output_folder";
 

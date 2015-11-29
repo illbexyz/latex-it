@@ -8,6 +8,8 @@ import android.preference.Preference;
 import android.preference.PreferenceFragment;
 import android.preference.PreferenceGroup;
 
+import me.albertonicoletti.latex.activities.SettingsActivity;
+
 /**
  * Settings fragment.
  *
@@ -15,9 +17,6 @@ import android.preference.PreferenceGroup;
  */
 public class SettingsFragment extends PreferenceFragment implements
                                             SharedPreferences.OnSharedPreferenceChangeListener {
-
-    public static final String IMAGES_FOLDER = "images_folder";
-    public static final String OUTPUT_FOLDER = "output_folder";
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -77,14 +76,17 @@ public class SettingsFragment extends PreferenceFragment implements
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
         switch (key){
-            case IMAGES_FOLDER:
-                EditTextPreference imagesFolder = (EditTextPreference) findPreference(IMAGES_FOLDER);
+            case SettingsActivity.IMAGES_FOLDER:
+                EditTextPreference imagesFolder = (EditTextPreference) findPreference(SettingsActivity.IMAGES_FOLDER);
                 imagesFolder.setSummary(ensureFolderSlash(imagesFolder.getText()));
                 break;
-            case OUTPUT_FOLDER:
-                EditTextPreference outputFolder = (EditTextPreference) findPreference(OUTPUT_FOLDER);
+            case SettingsActivity.OUTPUT_FOLDER:
+                EditTextPreference outputFolder = (EditTextPreference) findPreference(SettingsActivity.OUTPUT_FOLDER);
                 outputFolder.setSummary(ensureFolderSlash(outputFolder.getText()));
                 break;
+            case SettingsActivity.FONT_SIZE:
+                ListPreference fontSize = (ListPreference) findPreference(SettingsActivity.FONT_SIZE);
+                fontSize.setSummary(fontSize.getValue());
         }
     }
 

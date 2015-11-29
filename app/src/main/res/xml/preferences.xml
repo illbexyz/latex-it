@@ -1,6 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
     <PreferenceCategory
+        android:key="editor_category"
+        android:title="Editor">
+        <ListPreference
+            android:key="font_size"
+            android:title="Font Size"
+            android:dialogTitle="@string/font_size"
+            android:entries="@array/available_font_sizes"
+            android:entryValues="@array/available_font_sizes"
+            android:defaultValue="@string/default_font_size">
+        </ListPreference>
+    </PreferenceCategory>
+    <PreferenceCategory
         android:key="image_category"
         android:title="Directories">
         <EditTextPreference
@@ -13,8 +25,5 @@
             android:title="Output PDF Folder"
             android:summary="">
         </EditTextPreference>
-    </PreferenceCategory>
-    <PreferenceCategory>
-
     </PreferenceCategory>
 </PreferenceScreen>

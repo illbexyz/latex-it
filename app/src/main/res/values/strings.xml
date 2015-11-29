@@ -21,10 +21,13 @@
     <string name="drawer_open">Open</string>
     <string name="about">About</string>
     <string name="open_source_title">Open Source Licenses</string>
+    <string name="my_website"><a href="http://albertonicoletti.me" >albertonicoletti.me</a></string>
+    <string name="my_twitter"><a href="https://twitter.com/albyxyz_" >@albyxyz_</a></string>
     <string name="github_editor"><a href="https://github.com/albyxyz/latex-editor" >Github Latex Editor</a></string>
     <string name="github_server"><a href="https://github.com/albyxyz/latex-server" >Github Latex Server</a></string>
     <string name="github_profile"><a href="https://github.com/albyxyz" >albyxyz</a></string>
     <string name="my_mail"><a href="mailto:albyx.n@gmail.com">albyx.n@gmail.com</a></string>
+    <string name="donations_link"><a href="https://pledgie.com/campaigns/30545">Donations</a></string>
     <string name="developed_by">Developed by Alberto Nicoletti</string>
     <string name="description_me">CS Student @University of Bologna</string>
     <string name="links">Links</string>
@@ -32,5 +35,9 @@
     <string name="async_http_title">Android Asynchronous Http Client</string>
     <string name="apache_license">Apache License, Version 2.0</string>
     <string name="apache_license_link">https://www.apache.org/licenses/LICENSE-2.0</string>
+
+    <string name="font_size">Font Size</string>
+    <string name="default_font_size">12</string>
+    <string name="donations_description">The app is ad free, if you like it, a little donation would help me to maintain the server :D</string>
 
 </resources>

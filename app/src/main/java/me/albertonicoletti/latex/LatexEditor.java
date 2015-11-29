@@ -1,18 +1,23 @@
 package me.albertonicoletti.latex;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.text.Editable;
 import android.text.Spannable;
 import android.text.TextPaint;
 import android.text.style.ForegroundColorSpan;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.widget.EditText;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import me.albertonicoletti.latex.activities.SettingsActivity;
 
 /**
  * The editor, an EditText with extended functionality:
@@ -47,13 +52,13 @@ public class LatexEditor extends EditText {
     private static final Paint backgroundPainter = new Paint();
 
     /** Line height */
-    private int lineHeight;
+    private float lineHeight;
     /** Line counter's padding top (it starts a little before the actual lines) */
-    private int lineCountPaddingTop;
+    private float lineCountPaddingTop;
     /** Line counter's column width */
-    private int lineCounterColumnWidth;
+    private float lineCounterColumnWidth;
     /** Line counter's column right margin (the margin before the text starts) */
-    private int lineCounterColumnMargin;
+    private float lineCounterColumnMargin;
 
     public LatexEditor(Context context) {
         super(context);
@@ -71,18 +76,28 @@ public class LatexEditor extends EditText {
     }
 
     private void init(){
+        refreshFontSize();
+    }
+
+    public void refreshFontSize(){
+        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(getContext());
+        final String fontSizeString = sharedPref.getString(SettingsActivity.FONT_SIZE, "");
+        float scaledDensity = getContext().getResources().getDisplayMetrics().scaledDensity;
+        float fontSize = Float.valueOf(fontSizeString);
+        numberPainter.setTextSize((fontSize - 3) * scaledDensity);
+        setTextSize(fontSize);
+        lineHeight = getLineHeight();
         // Number's color
         numberPainter.setColor(getResources().getColor(R.color.text_grey));
-        lineHeight = getLineHeight();
-        // The line counter's size is 30% less than the text one
-        numberPainter.setTextSize(lineHeight * 0.70f);
         // Given a point, the numbers are drawn starting from the right
         numberPainter.setTextAlign(Paint.Align.RIGHT);
-        lineCountPaddingTop = getPaddingTop() - (lineHeight/7);
-        int marginBeforeText = (int) (getPaddingLeft() * 0.20f);
+        lineCountPaddingTop = - (lineHeight * 0.10f);
+        float paddingLeft = (lineHeight * 3f);
+        float marginBeforeText = paddingLeft * 0.2f;
         // The column width is given by the total padding left less the margin before text
-        lineCounterColumnWidth =  getPaddingLeft() - marginBeforeText;
+        lineCounterColumnWidth =  paddingLeft - marginBeforeText;
         lineCounterColumnMargin = lineCounterColumnWidth/6;
+        setPadding((int) paddingLeft, 0, 0, 0);
     }
 
     /**
@@ -134,13 +149,13 @@ public class LatexEditor extends EditText {
             if (!previousLineNoNewline) {
                 canvas.drawText(String.valueOf(lineToDraw),
                         lineCounterColumnWidth - lineCounterColumnMargin,
-                        lineCountPaddingTop + ((i+1) * lineHeight),
+                        ((i+1) * lineHeight) + lineCountPaddingTop,
                         numberPainter);
                 if (!containsNewLine) {
                     previousLineNoNewline = true;
                 }
                 lineToDraw++;
-                // When it finds a line containing a newline charcater, the next line will be drawn
+                // When it finds a line containing a newline character, the next line will be drawn
             } else {
                 if (containsNewLine) {
                     previousLineNoNewline = false;
@@ -159,7 +174,7 @@ public class LatexEditor extends EditText {
         ForegroundColorSpan spans[] = e.getSpans(
                 0,
                 e.length(),
-                ForegroundColorSpan.class );
+                ForegroundColorSpan.class);
 
         for( int n = spans.length; n-- > 0; )
             e.removeSpan( spans[n] );

@@ -26,6 +26,30 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:text="@string/my_website"
+        android:id="@+id/website_link"
+        android:paddingTop="6dp"
+        android:textSize="16sp"
+        android:drawableStart="@drawable/ic_http_white_24px"
+        android:drawableLeft="@drawable/ic_http_white_24px"
+        android:gravity="center_vertical"
+        android:textColor="@color/primary" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/my_twitter"
+        android:id="@+id/twitter_link"
+        android:paddingTop="6dp"
+        android:textSize="16sp"
+        android:drawableStart="@drawable/ic_twitter"
+        android:drawableLeft="@drawable/ic_twitter"
+        android:gravity="center_vertical"
+        android:textColor="@color/primary" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:text="@string/my_mail"
         android:id="@+id/my_mail"
         android:paddingTop="6dp"
@@ -33,7 +57,8 @@
         android:autoLink="email"
         android:drawableStart="@drawable/ic_email"
         android:drawableLeft="@drawable/ic_email"
-        android:gravity="center_vertical" />
+        android:gravity="center_vertical"
+        android:textColor="@color/primary" />
 
     <TextView
         android:layout_width="wrap_content"
@@ -44,7 +69,8 @@
         android:textSize="16sp"
         android:drawableStart="@drawable/ic_github_mark"
         android:drawableLeft="@drawable/ic_github_mark"
-        android:gravity="center_vertical" />
+        android:gravity="center_vertical"
+        android:textColor="@color/primary" />
 
     <View
         android:layout_width="fill_parent"
@@ -68,7 +94,8 @@
         android:textSize="16sp"
         android:drawableStart="@drawable/ic_github_mark"
         android:drawableLeft="@drawable/ic_github_mark"
-        android:gravity="center_vertical" />
+        android:gravity="center_vertical"
+        android:textColor="@color/primary" />
 
     <TextView
         android:layout_width="wrap_content"
@@ -79,6 +106,27 @@
         android:textSize="16sp"
         android:drawableStart="@drawable/ic_github_mark"
         android:drawableLeft="@drawable/ic_github_mark"
-        android:gravity="center_vertical" />
+        android:gravity="center_vertical"
+        android:textColor="@color/primary" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/donations_link"
+        android:id="@+id/donations"
+        android:paddingTop="6dp"
+        android:textSize="16sp"
+        android:drawableStart="@drawable/ic_attach_money_white_24px"
+        android:drawableLeft="@drawable/ic_attach_money_white_24px"
+        android:gravity="center_vertical"
+        android:textColor="@color/primary" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/donations_description"
+        android:id="@+id/donations_description"
+        android:paddingTop="6dp"
+        android:textSize="14sp" />
 
 </LinearLayout>

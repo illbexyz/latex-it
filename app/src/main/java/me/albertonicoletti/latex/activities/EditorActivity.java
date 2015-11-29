@@ -22,7 +22,6 @@ import android.text.Editable;
 import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.TextWatcher;
-import android.text.method.ScrollingMovementMethod;
 import android.text.style.RelativeSizeSpan;
 import android.util.Log;
 import android.view.Gravity;
@@ -43,6 +42,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -91,11 +91,11 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_editor);
         initPreferences();
+        setContentView(R.layout.activity_editor);
+        initSymbols();
         initDrawer();
         initEditor();
-        initSymbols();
 
         Uri fileUri = getIntent().getData();
         // If a URI is passed
@@ -123,6 +123,12 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
         openDocumentInEditor(document);
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        editor.refreshFontSize();
+    }
+
     /**
      * Initializes the preferences.
      * Sets the default output directory and images directory the first time the app is launched.
@@ -132,14 +138,19 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
         String imagesPath = FilesUtils.getDocumentsDir().getPath() + "/Images/";
 
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
         SharedPreferences.Editor prefsEdit = prefs.edit();
         String currentOutputFolder = prefs.getString(SettingsActivity.OUTPUT_FOLDER, null);
-        if(currentOutputFolder == null) {
+        if(currentOutputFolder == null || currentOutputFolder.equals("")) {
             prefsEdit.putString(SettingsActivity.OUTPUT_FOLDER, outputPath);
         }
         String currentImageFolder = prefs.getString(SettingsActivity.IMAGES_FOLDER, null);
-        if(currentImageFolder == null){
+        if(currentImageFolder == null || currentImageFolder.equals("")){
             prefsEdit.putString(SettingsActivity.IMAGES_FOLDER, imagesPath);
+        }
+        String fontSize = prefs.getString(SettingsActivity.FONT_SIZE, null);
+        if(fontSize == null  || fontSize.equals("")){
+            prefsEdit.putString(SettingsActivity.FONT_SIZE, "12");
         }
         prefsEdit.apply();
     }
@@ -334,20 +345,22 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
         int beginIndex = spannable.getSpanStart(span);
         int endIndex = spannable.getSpanEnd(span);
         // If the last written character is a newline
-        if (editable.charAt(endIndex-1) == '\n') {
-            int lineModified = editor.getLayout().getLineForOffset(beginIndex);
-            int modifiedBeginIndex = editor.getLayout().getLineStart(lineModified);
-            int modifiedEndIndex = editor.getLayout().getLineEnd(lineModified);
-            String str = editable.subSequence(modifiedBeginIndex, modifiedEndIndex).toString();
-            // Collects the whitespaces and tabulations in the upper line
-            String whitespaces = "";
-            int i = 0;
-            while (str.charAt(i) == ' ' || str.charAt(i) == '\t') {
-                whitespaces += str.charAt(i);
-                i++;
+        if(editable.length() > 0) {
+            if (editable.charAt(endIndex - 1) == '\n') {
+                int lineModified = editor.getLayout().getLineForOffset(beginIndex);
+                int modifiedBeginIndex = editor.getLayout().getLineStart(lineModified);
+                int modifiedEndIndex = editor.getLayout().getLineEnd(lineModified);
+                String str = editable.subSequence(modifiedBeginIndex, modifiedEndIndex).toString();
+                // Collects the whitespaces and tabulations in the upper line
+                String whitespaces = "";
+                int i = 0;
+                while (str.charAt(i) == ' ' || str.charAt(i) == '\t') {
+                    whitespaces += str.charAt(i);
+                    i++;
+                }
+                // And inserts them in the newline
+                editable.insert(beginIndex + 1, whitespaces);
             }
-            // And inserts them in the newline
-            editable.insert(beginIndex + 1, whitespaces);
         }
     }
 
@@ -361,7 +374,8 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
         getWindowManager().getDefaultDisplay().getSize(size);
         int start = Math.max(0, editor.getOffsetForPosition(0, scrollY));
         int end = Math.max(0, editor.getOffsetForPosition(size.x, scrollY + size.y));
-        editor.highlightText(start, end);
+        if(!document.isLog())
+            editor.highlightText(start, end);
     }
 
     /**
@@ -374,6 +388,7 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
         this.document = document;
         editor.setText("");
         // Reads the file in a new thread and shows a loading dialog meanwhile
+
         new AsyncTask<File, Integer, String>(){
             ProgressDialog asyncDialog = new ProgressDialog(EditorActivity.this);
 
@@ -400,7 +415,10 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
         }.execute(document);
         // Adds the document to the document's list if it isn't there yet
         if(!documents.contains(document)){
-            documents.add(document);
+            documents.addFirst(document);
+        } else {
+            documents.remove(document);
+            documents.addFirst(document);
         }
         refreshTitleAndDrawer();
         mDrawerLayout.closeDrawer(Gravity.START);
@@ -439,12 +457,15 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
     /**
      * Routine to save a specific document
      */
-    private void saveFile(){
+    private boolean saveFile(){
+        boolean exists = true;
         if(!document.exists()) {
             DialogsUtil.showRenameDialog(this, document);
+            exists = false;
         } else {
             FilesUtils.writeFile(document, editor.getTextString());
         }
+        return exists;
     }
 
     /**
@@ -524,119 +545,137 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
      * It will show the response pdf or log.
      */
     private void generatePDF(){
-        saveFile();
-        if(!editor.getTextString().equals("")) {
-            Toast.makeText(this, "Compressing and sending files...", Toast.LENGTH_SHORT).show();
-            SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
-            // Creates the folders if they not exists
-            final String imagesFolderPath = sharedPref.getString(SettingsActivity.IMAGES_FOLDER, "");
-            final String outputFolderPath = sharedPref.getString(SettingsActivity.OUTPUT_FOLDER, "");
-            File imagesFolder = new File(imagesFolderPath);
-            if(!imagesFolder.exists()){
-                FilesUtils.newDirectory(imagesFolderPath);
-            }
-            final File outputFolder = new File(outputFolderPath);
-            if(!outputFolder.exists()){
-                FilesUtils.newDirectory(outputFolderPath);
-            }
-            // Searches for the images
-            final LinkedList<String> imagesFilenames = new LinkedList<>();
-            String editorText = editor.getTextString();
-            Pattern pattern = Pattern.compile("(?<=\\\\includegraphics).*\\{.*\\}", Pattern.MULTILINE);
-            Matcher matcher = pattern.matcher(editorText);
-            while (matcher.find()) {
-                if (matcher.group().length() > 0) {
-                    String group = matcher.group();
-                    group = group.substring(group.indexOf("{") + 1, group.indexOf("}"));
-                    group = group.substring(0, group.indexOf("."));
-                    imagesFilenames.add(group);
+        boolean fileNeedsToBeSaved = !saveFile();
+        if(!fileNeedsToBeSaved) {
+            if (!editor.getTextString().equals("")) {
+                //Toast.makeText(this, "Compressing and sending files...", Toast.LENGTH_SHORT).show();
+                final ProgressDialog asyncDialog = new ProgressDialog(EditorActivity.this);
+                asyncDialog.setMessage("Compressing and sending files...");
+                asyncDialog.show();
+                SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
+                // Creates the folders if they not exists
+                final String imagesFolderPath = sharedPref.getString(SettingsActivity.IMAGES_FOLDER, "");
+                final String outputFolderPath = sharedPref.getString(SettingsActivity.OUTPUT_FOLDER, "");
+                File imagesFolder = new File(imagesFolderPath);
+                if (!imagesFolder.exists()) {
+                    FilesUtils.newDirectory(imagesFolderPath);
                 }
-            }
-
-            FilenameFilter filter = new FilenameFilter() {
-                @Override
-                public boolean accept(File dir, String filename) {
-                    String filenameNoExt = filename.substring(0, filename.lastIndexOf("."));
-                    return imagesFilenames.contains(filenameNoExt);
+                final File outputFolder = new File(outputFolderPath);
+                if (!outputFolder.exists()) {
+                    FilesUtils.newDirectory(outputFolderPath);
                 }
-            };
-            File[] images = imagesFolder.listFiles(filter);
-            File[] files = Arrays.copyOf(images, images.length + 1);
-            files[files.length - 1] = document;
-            // Zips the files
-            File zip = ZipUtils.newZipFile(outputFolderPath + document.getName(), files);
-            zip.deleteOnExit();
-            RequestParams params = new RequestParams();
-            try {
-                params.put("zip_file", zip, "application/zip");
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
-            }
-            LatexNetClient.post("latex", params, new FileAsyncHttpResponseHandler(this) {
-                @Override
-                public void onFailure(int i, Header[] headers, Throwable throwable, File file) {
-                    // On failure shows an error toast
-                    Toast.makeText(getApplicationContext(), "Something went wrong",
-                            Toast.LENGTH_LONG).show();
-                    Log.e("LATEX_NET", throwable.getMessage() + "");
-                }
-
-                @Override
-                public void onSuccess(int i, Header[] headers, final File file) {
-                    final Document receivedDocument = new Document(file);
-                    Header header = null;
-                    // Retrieves the content-type header
-                    for (Header h : headers) {
-                        if (h.getName().equals("Content-Type")) {
-                            header = h;
-                            break;
+                // Searches for the images
+                final LinkedList<String> imagesFilenames = new LinkedList<>();
+                String editorText = editor.getTextString();
+                Pattern pattern = Pattern.compile("(?<=\\\\includegraphics).*\\{.*\\}", Pattern.MULTILINE);
+                Matcher matcher = pattern.matcher(editorText);
+                while (matcher.find()) {
+                    if (matcher.group().length() > 0) {
+                        String group = matcher.group();
+                        group = group.substring(group.indexOf("{") + 1, group.indexOf("}"));
+                        if (group.contains(".")) {
+                            group = group.substring(0, group.indexOf("."));
                         }
+                        imagesFilenames.add(group);
                     }
-                    assert header != null;
-                    // If it's a PDF, the compile succeeded
-                    if (header.getValue().equals("application/pdf")) {
-                        // Saves the file in the output directory and tries to open it
-                        byte[] bytes = FilesUtils.readBinaryFile(file);
-                        String pdfName = document.getName().substring(0, document.getName().lastIndexOf(".")) + ".pdf";
-                        File pdf = new File(outputFolderPath, pdfName);
-                        FilesUtils.writeBinaryFile(pdf, bytes);
-                        Intent pdfIntent = new Intent();
-                        pdfIntent.setAction(Intent.ACTION_VIEW);
-                        pdfIntent.setDataAndType(Uri.fromFile(pdf), "application/pdf");
+                }
 
-                        if (pdfIntent.resolveActivity(getPackageManager()) != null) {
-                            startActivity(pdfIntent);
+                FilenameFilter compareWithoutExtension = new FilenameFilter() {
+                    @Override
+                    public boolean accept(File dir, String filename) {
+                        String filenameNoExt = filename;
+                        if (filename.contains(".")) {
+                            filenameNoExt = filename.substring(0, filename.lastIndexOf("."));
+                        }
+                        return imagesFilenames.contains(filenameNoExt);
+                    }
+                };
+
+                File[] images = imagesFolder.listFiles(compareWithoutExtension);
+                LinkedList<File> files = new LinkedList<File>();
+                Collections.addAll(files, images);
+
+                files.add(document);
+                // Zips the files
+                String docName = document.getName();
+                Log.v("dsdsd", docName);
+                File zip = ZipUtils.newZipFile(outputFolderPath + document.getName(), files);
+                zip.deleteOnExit();
+                RequestParams params = new RequestParams();
+                try {
+                    params.put("zip_file", zip, "application/zip");
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                }
+                asyncDialog.setMessage("Waiting for the server to compile...");
+                LatexNetClient.post("latex", params, new FileAsyncHttpResponseHandler(this) {
+                    @Override
+                    public void onFailure(int i, Header[] headers, Throwable throwable, File file) {
+                        asyncDialog.dismiss();
+                        // On failure shows an error toast
+                        Toast.makeText(getApplicationContext(), "Server Error. Please check your Internet connection / Firewall.",
+                                Toast.LENGTH_LONG).show();
+                        Log.e("LATEX_NET", throwable.getMessage() + "");
+                    }
+
+                    @Override
+                    public void onSuccess(int i, Header[] headers, final File file) {
+                        asyncDialog.dismiss();
+                        final Document receivedDocument = new Document(file);
+                        Header header = null;
+                        // Retrieves the content-type header
+                        for (Header h : headers) {
+                            if (h.getName().equals("Content-Type")) {
+                                header = h;
+                                break;
+                            }
+                        }
+                        assert header != null;
+                        // If it's a PDF, the compile succeeded
+                        if (header.getValue().equals("application/pdf")) {
+                            // Saves the file in the output directory and tries to open it
+                            byte[] bytes = FilesUtils.readBinaryFile(file);
+                            String pdfName = document.getName().substring(0, document.getName().lastIndexOf(".")) + ".pdf";
+                            File pdf = new File(outputFolderPath, pdfName);
+                            FilesUtils.writeBinaryFile(pdf, bytes);
+                            Intent pdfIntent = new Intent();
+                            pdfIntent.setAction(Intent.ACTION_VIEW);
+                            pdfIntent.setDataAndType(Uri.fromFile(pdf), "application/pdf");
+
+                            if (pdfIntent.resolveActivity(getPackageManager()) != null) {
+                                startActivity(pdfIntent);
+                            } else {
+                                Toast.makeText(getApplicationContext(), "You don't have any app to show pdf!",
+                                        Toast.LENGTH_LONG).show();
+                            }
                         } else {
-                            Toast.makeText(getApplicationContext(), "You don't have any app to show pdf!",
-                                    Toast.LENGTH_LONG).show();
+                            // Asks to open the log
+                            final AlertDialog dialog = new AlertDialog.Builder(EditorActivity.this).create();
+                            dialog.setTitle("Unsaved File");
+                            dialog.setMessage("Latex compiling has failed.\nDo you wish to open the log?");
+                            dialog.setCancelable(false);
+                            dialog.setButton(AlertDialog.BUTTON_NEGATIVE, "No", new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialogInterface, int i) {
+                                    dialog.dismiss();
+                                }
+                            });
+                            dialog.setButton(AlertDialog.BUTTON_POSITIVE, "Yes", new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialogInterface, int i) {
+                                    receivedDocument.setLog();
+                                    openDocumentInEditor(receivedDocument);
+                                }
+                            });
+                            dialog.show();
                         }
-                    } else {
-                        // Asks to open the log
-                        final AlertDialog dialog = new AlertDialog.Builder(EditorActivity.this).create();
-                        dialog.setTitle("Unsaved File");
-                        dialog.setMessage("Latex compiling has failed.\nDo you wish to open the log?");
-                        dialog.setCancelable(false);
-                        dialog.setButton(AlertDialog.BUTTON_NEGATIVE, "No", new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialogInterface, int i) {
-                                dialog.dismiss();
-                            }
-                        });
-                        dialog.setButton(AlertDialog.BUTTON_POSITIVE, "Yes", new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialogInterface, int i) {
-                                receivedDocument.setLog();
-                                openDocumentInEditor(receivedDocument);
-                            }
-                        });
-                        dialog.show();
                     }
-                }
-            });
-        } else {
-            // Empty file
-            Toast.makeText(getApplicationContext(), "Can't compile an empty file!",
-                    Toast.LENGTH_LONG).show();
+                });
+            } else {
+                // Empty file
+                Toast.makeText(getApplicationContext(), "Can't compile an empty file!",
+                        Toast.LENGTH_LONG).show();
+            }
         }
     }
 

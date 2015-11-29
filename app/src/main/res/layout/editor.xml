@@ -17,9 +17,7 @@
         android:gravity="start|top"
         android:background="@color/editor_background"
         android:textColor="@color/editor_text"
-        android:textSize="12sp"
         android:inputType="textNoSuggestions|text|textMultiLine"
-        android:paddingLeft="30dp"
         android:longClickable="true"
         android:cursorVisible="true" />
 
