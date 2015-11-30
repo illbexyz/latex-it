@@ -1,5 +1,6 @@
 package me.albertonicoletti.latex.activities;
 
+import android.Manifest;
 import android.app.ActionBar;
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -8,12 +9,17 @@ import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Point;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
+import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.widget.LinearLayoutManager;
@@ -24,7 +30,6 @@ import android.text.Spanned;
 import android.text.TextWatcher;
 import android.text.style.RelativeSizeSpan;
 import android.util.Log;
-import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -36,18 +41,16 @@ import android.widget.Toast;
 import com.loopj.android.http.FileAsyncHttpResponseHandler;
 import com.loopj.android.http.RequestParams;
 
-import org.apache.http.Header;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import cz.msebera.android.httpclient.Header;
 import me.albertonicoletti.latex.DataPersistenceUtil;
 import me.albertonicoletti.latex.DialogsUtil;
 import me.albertonicoletti.latex.Document;
@@ -71,6 +74,8 @@ import me.albertonicoletti.utils.ZipUtils;
 public class EditorActivity extends Activity implements DocumentClickListener.DocumentClickInterface,
         RenameDialog.RenameDialogListener,
         DocumentOptionsDialog.DocumentDialogListener {
+
+    public final static int WRITE_EXTERNAL_STORAGE_PERMISSION = 1;
 
     private ActionBarDrawerToggle mDrawerToggle;
     /** Left Drawer Layout */
@@ -129,6 +134,24 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
         editor.refreshFontSize();
     }
 
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           @NonNull String permissions[], @NonNull int[] grantResults) {
+        switch (requestCode) {
+            case WRITE_EXTERNAL_STORAGE_PERMISSION: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    saveFile();
+                } else {
+                    Toast.makeText(getBaseContext(), getString(R.string.why_write_permissions),
+                            Toast.LENGTH_SHORT).show();
+                }
+            }
+
+        }
+    }
+
     /**
      * Initializes the preferences.
      * Sets the default output directory and images directory the first time the app is launched.
@@ -171,7 +194,7 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
                 new DocumentClickListener(this),
                 DocumentsAdapter.DRAWER);
         mDrawerList.setAdapter(documentsAdapter);
-        mDrawerLayout.openDrawer(Gravity.START);
+        mDrawerLayout.openDrawer(GravityCompat.START);
         mDrawerToggle = new ActionBarDrawerToggle(
                 this,                  /* host Activity */
                 mDrawerLayout,         /* DrawerLayout object */
@@ -303,6 +326,7 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
      */
     @Override
     protected void onStop() {
+        saveFile();
         DataPersistenceUtil.saveFilesPath(getApplicationContext(), documents);
         super.onStop();
     }
@@ -421,7 +445,7 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
             documents.addFirst(document);
         }
         refreshTitleAndDrawer();
-        mDrawerLayout.closeDrawer(Gravity.START);
+        mDrawerLayout.closeDrawer(GravityCompat.START);
     }
 
     /**
@@ -455,15 +479,25 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
 
 
     /**
-     * Routine to save a specific document
+     * Routine to save the current document
+     * @return True if the file existed before this method call.
      */
     private boolean saveFile(){
-        boolean exists = true;
-        if(!document.exists()) {
-            DialogsUtil.showRenameDialog(this, document);
-            exists = false;
+        boolean exists = false;
+        if (ContextCompat.checkSelfPermission(this,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+
+                new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                    WRITE_EXTERNAL_STORAGE_PERMISSION);
+
         } else {
-            FilesUtils.writeFile(document, editor.getTextString());
+            if (!document.exists()) {
+                DialogsUtil.showRenameDialog(this, document);
+            } else {
+                FilesUtils.writeFile(document, editor.getTextString());
+                exists = true;
+            }
         }
         return exists;
     }
@@ -610,7 +644,7 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
                 asyncDialog.setMessage("Waiting for the server to compile...");
                 LatexNetClient.post("latex", params, new FileAsyncHttpResponseHandler(this) {
                     @Override
-                    public void onFailure(int i, Header[] headers, Throwable throwable, File file) {
+                    public void onFailure(int statusCode, cz.msebera.android.httpclient.Header[] headers, Throwable throwable, File file) {
                         asyncDialog.dismiss();
                         // On failure shows an error toast
                         Toast.makeText(getApplicationContext(), "Server Error. Please check your Internet connection / Firewall.",
@@ -619,7 +653,7 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
                     }
 
                     @Override
-                    public void onSuccess(int i, Header[] headers, final File file) {
+                    public void onSuccess(int statusCode, cz.msebera.android.httpclient.Header[] headers, File file) {
                         asyncDialog.dismiss();
                         final Document receivedDocument = new Document(file);
                         Header header = null;
@@ -651,7 +685,7 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
                         } else {
                             // Asks to open the log
                             final AlertDialog dialog = new AlertDialog.Builder(EditorActivity.this).create();
-                            dialog.setTitle("Unsaved File");
+                            dialog.setTitle("Compiling Error");
                             dialog.setMessage("Latex compiling has failed.\nDo you wish to open the log?");
                             dialog.setCancelable(false);
                             dialog.setButton(AlertDialog.BUTTON_NEGATIVE, "No", new DialogInterface.OnClickListener() {
@@ -670,6 +704,7 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
                             dialog.show();
                         }
                     }
+
                 });
             } else {
                 // Empty file
@@ -780,8 +815,9 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
     public void onDocumentClickListener(View view) {
         TextView textView = (TextView) view.findViewById(R.id.drawer_file_path);
         String filePath = textView.getText().toString();
+        saveFile();
         openDocumentInEditor(documents.get(documents.indexOf(new Document(filePath))));
-        mDrawerLayout.closeDrawer(Gravity.START);
+        mDrawerLayout.closeDrawer(GravityCompat.START);
     }
 
     /**

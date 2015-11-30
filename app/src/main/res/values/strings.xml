@@ -36,6 +36,8 @@
     <string name="apache_license">Apache License, Version 2.0</string>
     <string name="apache_license_link">https://www.apache.org/licenses/LICENSE-2.0</string>
 
+    <string name="why_write_permissions">Need the permission to write in external storage to save files</string>
+
     <string name="font_size">Font Size</string>
     <string name="default_font_size">12</string>
     <string name="donations_description">The app is ad free, if you like it, a little donation would help me to maintain the server :D</string>
