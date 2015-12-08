@@ -19,6 +19,8 @@
         android:textColor="@color/editor_text"
         android:inputType="textNoSuggestions|text|textMultiLine"
         android:longClickable="true"
-        android:cursorVisible="true" />
+        android:cursorVisible="true"
+        android:fontFamily="monospace"
+        android:typeface="monospace"/>
 
 </me.albertonicoletti.latex.VerticalScrollView>
