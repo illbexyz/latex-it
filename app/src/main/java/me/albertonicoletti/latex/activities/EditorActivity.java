@@ -3,7 +3,6 @@ package me.albertonicoletti.latex.activities;
 import android.Manifest;
 import android.app.ActionBar;
 import android.app.Activity;
-import android.app.AlertDialog;
 import android.app.DialogFragment;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
@@ -11,7 +10,10 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
+import android.graphics.Color;
 import android.graphics.Point;
+import android.graphics.PorterDuff;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -90,6 +92,10 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
     private LinkedList<Document> documents = new LinkedList<>();
     /** The document the editor is showing */
     private Document document;
+
+    private TextWatcher textWatcher;
+    private Menu menu;
+    private MenuItem saveButton;
     /** Used to remember when back button is pressed */
     private long backPressed = 0;
 
@@ -243,7 +249,10 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
                 highlightEditor();
             }
         });
-        editor.addTextChangedListener(new TextWatcher() {
+    }
+
+    private void startTextWatcher(){
+        textWatcher = new TextWatcher() {
 
             private RelativeSizeSpan span;
             private SpannableString spannable;
@@ -266,6 +275,9 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
             @Override
             public void afterTextChanged(Editable s) {
                 if (editor.getLayout() != null && spannable != null) {
+                    document.setSaved(false);
+                    setSaveButtonEnable(true);
+                    menu.findItem(R.id.action_save).setEnabled(true);
                     autoIndentEditor(s, spannable, span);
                     highlightEditor();
                     // Cleanup
@@ -273,7 +285,12 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
                     spannable = null;
                 }
             }
-        });
+        };
+        editor.addTextChangedListener(textWatcher);
+    }
+
+    private void stopTextWatcher(){
+        editor.removeTextChangedListener(textWatcher);
     }
 
     /**
@@ -305,7 +322,20 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_editor, menu);
+        this.menu = menu;
+        saveButton = menu.findItem(R.id.action_save);
+        setSaveButtonEnable(false);
         return true;
+    }
+
+    private void setSaveButtonEnable(boolean enable){
+        if(saveButton != null) {
+            Drawable resIcon = ContextCompat.getDrawable(getBaseContext(), R.drawable.ic_save_white_24dp);
+            if (!enable)
+                resIcon.mutate().setColorFilter(Color.LTGRAY, PorterDuff.Mode.SRC_IN);
+            saveButton.setEnabled(enable);
+            saveButton.setIcon(resIcon);
+        }
     }
 
     @Override
@@ -326,7 +356,6 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
      */
     @Override
     protected void onStop() {
-        saveFile();
         DataPersistenceUtil.saveFilesPath(getApplicationContext(), documents);
         super.onStop();
     }
@@ -407,6 +436,7 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
      * @param document Document to open
      */
     private void openDocumentInEditor(Document document){
+        stopTextWatcher();
         this.document.setOpen(false);
         document.setOpen(true);
         this.document = document;
@@ -433,17 +463,17 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
             protected void onPostExecute(String s) {
                 editor.setText(s);
                 asyncDialog.dismiss();
+                setSaveButtonEnable(false);
+                startTextWatcher();
                 super.onPostExecute(s);
             }
 
         }.execute(document);
         // Adds the document to the document's list if it isn't there yet
-        if(!documents.contains(document)){
-            documents.addFirst(document);
-        } else {
+        if(documents.contains(document)){
             documents.remove(document);
-            documents.addFirst(document);
         }
+        documents.addFirst(document);
         refreshTitleAndDrawer();
         mDrawerLayout.closeDrawer(GravityCompat.START);
     }
@@ -497,6 +527,9 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
             } else {
                 FilesUtils.writeFile(document, editor.getTextString());
                 exists = true;
+                document.setSaved(true);
+                setSaveButtonEnable(false);
+                menu.findItem(R.id.action_save).setEnabled(false);
             }
         }
         return exists;
@@ -626,7 +659,7 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
                 };
 
                 File[] images = imagesFolder.listFiles(compareWithoutExtension);
-                LinkedList<File> files = new LinkedList<File>();
+                LinkedList<File> files = new LinkedList<>();
                 Collections.addAll(files, images);
 
                 files.add(document);
@@ -683,25 +716,23 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
                                         Toast.LENGTH_LONG).show();
                             }
                         } else {
-                            // Asks to open the log
-                            final AlertDialog dialog = new AlertDialog.Builder(EditorActivity.this).create();
-                            dialog.setTitle("Compiling Error");
-                            dialog.setMessage("Latex compiling has failed.\nDo you wish to open the log?");
-                            dialog.setCancelable(false);
-                            dialog.setButton(AlertDialog.BUTTON_NEGATIVE, "No", new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(DialogInterface dialogInterface, int i) {
-                                    dialog.dismiss();
-                                }
-                            });
-                            dialog.setButton(AlertDialog.BUTTON_POSITIVE, "Yes", new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(DialogInterface dialogInterface, int i) {
-                                    receivedDocument.setLog();
-                                    openDocumentInEditor(receivedDocument);
-                                }
-                            });
-                            dialog.show();
+                            // Asks the user if he wishes to open the log.
+                            DialogsUtil.showConfirmDialog(EditorActivity.this,
+                                    getString(R.string.compiling_error_title),
+                                    getString(R.string.compiling_error_message),
+                                    new DialogInterface.OnClickListener() {
+                                        @Override
+                                        public void onClick(DialogInterface dialogInterface, int i) {
+                                            dialogInterface.dismiss();
+                                        }
+                                    },new DialogInterface.OnClickListener() {
+                                        @Override
+                                        public void onClick(DialogInterface dialogInterface, int i) {
+                                            receivedDocument.setLog();
+                                            openDocumentInEditor(receivedDocument);
+                                        }
+                                    }
+                            );
                         }
                     }
 
@@ -807,6 +838,39 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
         return files;
     }
 
+    private void showSaveDialog(final String filePath){
+        DialogsUtil.showConfirmDialog(EditorActivity.this,
+                getString(R.string.confirm_save_title),
+                getString(R.string.confirm_save_message),
+                new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        switchDocument(filePath);
+                    }
+                },
+                new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        saveFile();
+                        switchDocument(filePath);
+                    }
+                }
+        );
+    }
+
+    private void askUserIfFileHasToBeSaved(String filePath) {
+        if(!document.isSaved()) {
+            showSaveDialog(filePath);
+        } else {
+            switchDocument(filePath);
+        }
+    }
+
+    private void switchDocument(String filePath){
+        openDocumentInEditor(documents.get(documents.indexOf(new Document(filePath))));
+        mDrawerLayout.closeDrawer(GravityCompat.START);
+    }
+
     /**
      * On clicking a document in the drawer, it opens it in the editor
      * @param view View
@@ -815,9 +879,7 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
     public void onDocumentClickListener(View view) {
         TextView textView = (TextView) view.findViewById(R.id.drawer_file_path);
         String filePath = textView.getText().toString();
-        saveFile();
-        openDocumentInEditor(documents.get(documents.indexOf(new Document(filePath))));
-        mDrawerLayout.closeDrawer(GravityCompat.START);
+        askUserIfFileHasToBeSaved(filePath);
     }
 
     /**

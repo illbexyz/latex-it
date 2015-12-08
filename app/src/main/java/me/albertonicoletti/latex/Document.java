@@ -15,6 +15,8 @@ public class Document extends File {
     /** Set to true if the file is open in the editor */
     private boolean open = false;
 
+    private boolean isSaved = true;
+
     public Document(String path) {
         super(path);
     }
@@ -37,5 +39,13 @@ public class Document extends File {
 
     public void setOpen(boolean open) {
         this.open = open;
+    }
+
+    public boolean isSaved() {
+        return isSaved;
+    }
+
+    public void setSaved(boolean saved) {
+        isSaved = saved;
     }
 }

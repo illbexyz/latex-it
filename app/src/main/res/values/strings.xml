@@ -19,6 +19,11 @@
     <string name="choose_file">Choose a file</string>
     <string name="drawer_close">Close</string>
     <string name="drawer_open">Open</string>
+    <string name="compiling_error_title">Compiling Error</string>
+    <string name="compiling_error_message">
+        Latex compiling has failed.
+        Do you wish to open the log?
+    </string>
     <string name="about">About</string>
     <string name="open_source_title">Open Source Licenses</string>
     <string name="my_website"><a href="http://albertonicoletti.me" >albertonicoletti.me</a></string>
@@ -41,5 +46,7 @@
     <string name="font_size">Font Size</string>
     <string name="default_font_size">12</string>
     <string name="donations_description">The app is ad free, if you like it, a little donation would help me to maintain the server :D</string>
+    <string name="confirm_save_title">Save File?</string>
+    <string name="confirm_save_message">Do you want to save the changes?</string>
 
 </resources>
