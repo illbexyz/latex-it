@@ -109,24 +109,4 @@
         android:gravity="center_vertical"
         android:textColor="@color/primary" />
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/donations_link"
-        android:id="@+id/donations"
-        android:paddingTop="6dp"
-        android:textSize="16sp"
-        android:drawableStart="@drawable/ic_attach_money_white_24px"
-        android:drawableLeft="@drawable/ic_attach_money_white_24px"
-        android:gravity="center_vertical"
-        android:textColor="@color/primary" />
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/donations_description"
-        android:id="@+id/donations_description"
-        android:paddingTop="6dp"
-        android:textSize="14sp" />
-
 </LinearLayout>

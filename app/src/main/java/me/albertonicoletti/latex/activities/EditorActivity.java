@@ -77,6 +77,10 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
         RenameDialog.RenameDialogListener,
         DocumentOptionsDialog.DocumentDialogListener {
 
+    private enum Permissions {
+        SAVE, OPEN
+    }
+
     public final static int WRITE_EXTERNAL_STORAGE_PERMISSION = 1;
 
     private ActionBarDrawerToggle mDrawerToggle;
@@ -98,6 +102,7 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
     private MenuItem saveButton;
     /** Used to remember when back button is pressed */
     private long backPressed = 0;
+    private Permissions currentPermission;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -142,13 +147,21 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
 
     @Override
     public void onRequestPermissionsResult(int requestCode,
-                                           @NonNull String permissions[], @NonNull int[] grantResults) {
+                                           @NonNull String permissions[],
+                                           @NonNull int[] grantResults) {
         switch (requestCode) {
             case WRITE_EXTERNAL_STORAGE_PERMISSION: {
                 // If request is cancelled, the result arrays are empty.
                 if (grantResults.length > 0
                         && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    saveFile();
+                    switch(currentPermission) {
+                        case SAVE:
+                            saveFile();
+                            break;
+                        case OPEN:
+                            startFileChooserActivity();
+                            break;
+                    }
                 } else {
                     Toast.makeText(getBaseContext(), getString(R.string.why_write_permissions),
                             Toast.LENGTH_SHORT).show();
@@ -507,21 +520,25 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
         highlightEditor();
     }
 
+    private boolean checkStoragePermissions(Permissions type) {
+        currentPermission = type;
+        if (ContextCompat.checkSelfPermission(this,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                    WRITE_EXTERNAL_STORAGE_PERMISSION);
+            return false;
+        }
+        return true;
+    }
 
     /**
      * Routine to save the current document
      * @return True if the file existed before this method call.
      */
-    private boolean saveFile(){
+    private boolean saveFile() {
         boolean exists = false;
-        if (ContextCompat.checkSelfPermission(this,
-                Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this,
-
-                new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
-                    WRITE_EXTERNAL_STORAGE_PERMISSION);
-
-        } else {
+        if(checkStoragePermissions(Permissions.SAVE)) {
             if (!document.exists()) {
                 DialogsUtil.showRenameDialog(this, document);
             } else {
@@ -604,6 +621,16 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
     private void openSource(){
         Intent intent = new Intent(this, OpenSourceLicencesActivity.class);
         startActivity(intent);
+    }
+
+    /**
+     * Launches the file chooser activity
+     */
+    private void startFileChooserActivity(){
+        if(checkStoragePermissions(Permissions.OPEN)) {
+            Intent intent = new Intent(this, FileChooserActivity.class);
+            startActivityForResult(intent, 1);
+        }
     }
 
     /**
@@ -798,8 +825,7 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
      * @param view View
      */
     public void onOpenClick(View view) {
-        Intent intent = new Intent(this, FileChooserActivity.class);
-        startActivityForResult(intent, 1);
+        startFileChooserActivity();
     }
 
     /**

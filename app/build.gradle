@@ -8,8 +8,8 @@ android {
         applicationId "me.albertonicoletti.latex"
         minSdkVersion 15
         targetSdkVersion 23
-        versionCode 7
-        versionName "1.06"
+        versionCode 9
+        versionName "1.08"
     }
 
     packagingOptions {

@@ -24,14 +24,12 @@ public class AboutActivity extends Activity {
         TextView server = (TextView) findViewById(R.id.github_server);
         TextView website = (TextView) findViewById(R.id.website_link);
         TextView twitter = (TextView) findViewById(R.id.twitter_link);
-        TextView donations = (TextView) findViewById(R.id.donations);
         mail.setMovementMethod(LinkMovementMethod.getInstance());
         profile.setMovementMethod(LinkMovementMethod.getInstance());
         editor.setMovementMethod(LinkMovementMethod.getInstance());
         server.setMovementMethod(LinkMovementMethod.getInstance());
         website.setMovementMethod(LinkMovementMethod.getInstance());
         twitter.setMovementMethod(LinkMovementMethod.getInstance());
-        donations.setMovementMethod(LinkMovementMethod.getInstance());
     }
 
 }
