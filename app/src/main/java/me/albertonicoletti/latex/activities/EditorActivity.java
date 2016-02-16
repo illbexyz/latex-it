@@ -487,6 +487,7 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
         this.document = document;
         if(document.hasSavedText()) {
             editor.setText(document.getSavedText());
+            startTextWatcher();
         } else {
             editor.setText("");
             // Reads the file in a new thread and shows a loading dialog meanwhile
