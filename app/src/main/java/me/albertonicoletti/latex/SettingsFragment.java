@@ -8,6 +8,8 @@ import android.preference.Preference;
 import android.preference.PreferenceFragment;
 import android.preference.PreferenceGroup;
 
+import java.util.List;
+
 import me.albertonicoletti.latex.activities.SettingsActivity;
 
 /**
@@ -87,6 +89,9 @@ public class SettingsFragment extends PreferenceFragment implements
             case SettingsActivity.FONT_SIZE:
                 ListPreference fontSize = (ListPreference) findPreference(SettingsActivity.FONT_SIZE);
                 fontSize.setSummary(fontSize.getValue());
+            case SettingsActivity.EXE:
+                ListPreference exe = (ListPreference) findPreference(SettingsActivity.EXE);
+                exe.setSummary(exe.getValue());
         }
     }
 

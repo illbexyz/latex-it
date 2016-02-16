@@ -41,16 +41,10 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.loopj.android.http.FileAsyncHttpResponseHandler;
-import com.loopj.android.http.RequestParams;
 
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FilenameFilter;
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import cz.msebera.android.httpclient.Header;
 import me.albertonicoletti.latex.DataPersistenceUtil;
@@ -59,13 +53,13 @@ import me.albertonicoletti.latex.Document;
 import me.albertonicoletti.latex.DocumentClickListener;
 import me.albertonicoletti.latex.DocumentOptionsDialog;
 import me.albertonicoletti.latex.DocumentsAdapter;
+import me.albertonicoletti.latex.LatexCompiler;
 import me.albertonicoletti.latex.LatexEditor;
-import me.albertonicoletti.latex.LatexNetClient;
+import me.albertonicoletti.latex.PreferenceHelper;
 import me.albertonicoletti.latex.R;
 import me.albertonicoletti.latex.RenameDialog;
 import me.albertonicoletti.latex.VerticalScrollView;
 import me.albertonicoletti.utils.FilesUtils;
-import me.albertonicoletti.utils.ZipUtils;
 
 /**
  * The main activity, it shows the editor.
@@ -116,6 +110,7 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
         Uri fileUri = getIntent().getData();
         // If a URI is passed
         if (fileUri != null) {
+            checkStoragePermissions(Permissions.OPEN);
             document = new Document(fileUri.getPath());
         } else {
             // No URI is passed
@@ -128,6 +123,7 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
                 for(Document d : documents){
                     if(d.isOpen()){
                         document = d;
+                        break;
                     }
                 }
                 // It should never go here, just in case of an error it opens the first file
@@ -137,6 +133,23 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
             }
         }
         openDocumentInEditor(document);
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        if(!document.isSaved()) {
+            document.setSavedText(editor.getTextString());
+        }
+        outState.putInt("scrollY", scrollView.getScrollY());
+        outState.putInt("selectionStart", editor.getSelectionStart());
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        scrollView.setScrollY(savedInstanceState.getInt("scrollY"));
+        editor.setSelection(savedInstanceState.getInt("selectionStart"));
     }
 
     @Override
@@ -163,7 +176,7 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
                             break;
                     }
                 } else {
-                    Toast.makeText(getBaseContext(), getString(R.string.why_write_permissions),
+                    Toast.makeText(getApplicationContext(), getString(R.string.why_write_permissions),
                             Toast.LENGTH_SHORT).show();
                 }
             }
@@ -176,12 +189,13 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
      * Sets the default output directory and images directory the first time the app is launched.
      */
     private void initPreferences(){
-        String outputPath = FilesUtils.getDocumentsDir().getPath() + "/LatexOutput/";
-        String imagesPath = FilesUtils.getDocumentsDir().getPath() + "/Images/";
+        String outputPath = SettingsActivity.DEFAULT_OUTPUT_FOLDER;
+        String imagesPath = SettingsActivity.DEFAULT_IMAGES_FOLDER;
 
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
         SharedPreferences.Editor prefsEdit = prefs.edit();
+
         String currentOutputFolder = prefs.getString(SettingsActivity.OUTPUT_FOLDER, null);
         if(currentOutputFolder == null || currentOutputFolder.equals("")) {
             prefsEdit.putString(SettingsActivity.OUTPUT_FOLDER, outputPath);
@@ -190,11 +204,18 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
         if(currentImageFolder == null || currentImageFolder.equals("")){
             prefsEdit.putString(SettingsActivity.IMAGES_FOLDER, imagesPath);
         }
-        String fontSize = prefs.getString(SettingsActivity.FONT_SIZE, null);
-        if(fontSize == null  || fontSize.equals("")){
-            prefsEdit.putString(SettingsActivity.FONT_SIZE, "12");
-        }
         prefsEdit.apply();
+        // Creates the folders if they not exists
+        final String imagesFolderPath = PreferenceHelper.getImageFolder(getApplicationContext());
+        final String outputFolderPath = PreferenceHelper.getOutputFolder(getApplicationContext());
+        File imagesFolder = new File(imagesFolderPath);
+        if (!imagesFolder.exists()) {
+            FilesUtils.newDirectory(imagesFolderPath);
+        }
+        final File outputFolder = new File(outputFolderPath);
+        if (!outputFolder.exists()) {
+            FilesUtils.newDirectory(outputFolderPath);
+        }
     }
 
     /**
@@ -289,9 +310,9 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
             public void afterTextChanged(Editable s) {
                 if (editor.getLayout() != null && spannable != null) {
                     document.setSaved(false);
-                    setSaveButtonEnable(true);
+                    setSaveButtonEnabled(true);
                     menu.findItem(R.id.action_save).setEnabled(true);
-                    autoIndentEditor(s, spannable, span);
+                    autoIndentAndTabEditor(s, spannable, span);
                     highlightEditor();
                     // Cleanup
                     span = null;
@@ -337,13 +358,13 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
         getMenuInflater().inflate(R.menu.menu_editor, menu);
         this.menu = menu;
         saveButton = menu.findItem(R.id.action_save);
-        setSaveButtonEnable(false);
+        setSaveButtonEnabled(document.hasSavedText());
         return true;
     }
 
-    private void setSaveButtonEnable(boolean enable){
+    private void setSaveButtonEnabled(boolean enable){
         if(saveButton != null) {
-            Drawable resIcon = ContextCompat.getDrawable(getBaseContext(), R.drawable.ic_save_white_24dp);
+            Drawable resIcon = ContextCompat.getDrawable(getApplicationContext(), R.drawable.ic_save_white_24dp);
             if (!enable)
                 resIcon.mutate().setColorFilter(Color.LTGRAY, PorterDuff.Mode.SRC_IN);
             saveButton.setEnabled(enable);
@@ -407,7 +428,7 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
      * @param spannable Spannable
      * @param span Modified span
      */
-    private void autoIndentEditor(Editable editable, SpannableString spannable, RelativeSizeSpan span){
+    private void autoIndentAndTabEditor(Editable editable, SpannableString spannable, RelativeSizeSpan span){
         int beginIndex = spannable.getSpanStart(span);
         int endIndex = spannable.getSpanEnd(span);
         // If the last written character is a newline
@@ -426,6 +447,17 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
                 }
                 // And inserts them in the newline
                 editable.insert(beginIndex + 1, whitespaces);
+            }
+            if (editable.charAt(endIndex - 1) == '\t') {
+                int tabSize = Integer.valueOf(
+                        PreferenceManager.getDefaultSharedPreferences(this)
+                                .getString(SettingsActivity.TAB_SIZE, "")
+                );
+                String whitespaces = "";
+                for (int i=0; i < tabSize; i++) {
+                    whitespaces += " ";
+                }
+                editable.replace(beginIndex, beginIndex+1, whitespaces);
             }
         }
     }
@@ -453,35 +485,38 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
         this.document.setOpen(false);
         document.setOpen(true);
         this.document = document;
-        editor.setText("");
-        // Reads the file in a new thread and shows a loading dialog meanwhile
+        if(document.hasSavedText()) {
+            editor.setText(document.getSavedText());
+        } else {
+            editor.setText("");
+            // Reads the file in a new thread and shows a loading dialog meanwhile
+            new AsyncTask<File, Integer, String>() {
+                ProgressDialog asyncDialog = new ProgressDialog(EditorActivity.this);
 
-        new AsyncTask<File, Integer, String>(){
-            ProgressDialog asyncDialog = new ProgressDialog(EditorActivity.this);
+                @Override
+                protected void onPreExecute() {
+                    asyncDialog.setMessage("Loading...");
+                    asyncDialog.show();
+                    super.onPreExecute();
+                }
 
-            @Override
-            protected void onPreExecute(){
-                asyncDialog.setMessage("Loading...");
-                asyncDialog.show();
-                super.onPreExecute();
-            }
+                @Override
+                protected String doInBackground(File... params) {
+                    File file = params[0];
+                    return FilesUtils.readTextFile(file);
+                }
 
-            @Override
-            protected String doInBackground(File... params) {
-                File file = params[0];
-                return FilesUtils.readTextFile(file);
-            }
+                @Override
+                protected void onPostExecute(String s) {
+                    editor.setText(s);
+                    asyncDialog.dismiss();
+                    setSaveButtonEnabled(false);
+                    startTextWatcher();
+                    super.onPostExecute(s);
+                }
 
-            @Override
-            protected void onPostExecute(String s) {
-                editor.setText(s);
-                asyncDialog.dismiss();
-                setSaveButtonEnable(false);
-                startTextWatcher();
-                super.onPostExecute(s);
-            }
-
-        }.execute(document);
+            }.execute(document);
+        }
         // Adds the document to the document's list if it isn't there yet
         if(documents.contains(document)){
             documents.remove(document);
@@ -504,7 +539,7 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
                 saveFile();
                 super.onBackPressed();
             } else {
-                Toast.makeText(getBaseContext(), "Press once again to exit!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getApplicationContext(), "Press once again to exit!", Toast.LENGTH_SHORT).show();
                 backPressed = System.currentTimeMillis();
             }
         }
@@ -545,7 +580,7 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
                 FilesUtils.writeFile(document, editor.getTextString());
                 exists = true;
                 document.setSaved(true);
-                setSaveButtonEnable(false);
+                setSaveButtonEnabled(false);
                 menu.findItem(R.id.action_save).setEnabled(false);
             }
         }
@@ -641,73 +676,20 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
     private void generatePDF(){
         boolean fileNeedsToBeSaved = !saveFile();
         if(!fileNeedsToBeSaved) {
-            if (!editor.getTextString().equals("")) {
-                //Toast.makeText(this, "Compressing and sending files...", Toast.LENGTH_SHORT).show();
+            if(!editor.getTextString().equals("")){
+                final String imagesFolderPath = PreferenceHelper.getImageFolder(getApplicationContext());
+                final String outputFolderPath = PreferenceHelper.getOutputFolder(getApplicationContext());
+                final File imagesFolder = new File(imagesFolderPath);
+                final File outputFolder = new File(outputFolderPath);
                 final ProgressDialog asyncDialog = new ProgressDialog(EditorActivity.this);
                 asyncDialog.setMessage("Compressing and sending files...");
                 asyncDialog.show();
-                SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
-                // Creates the folders if they not exists
-                final String imagesFolderPath = sharedPref.getString(SettingsActivity.IMAGES_FOLDER, "");
-                final String outputFolderPath = sharedPref.getString(SettingsActivity.OUTPUT_FOLDER, "");
-                File imagesFolder = new File(imagesFolderPath);
-                if (!imagesFolder.exists()) {
-                    FilesUtils.newDirectory(imagesFolderPath);
-                }
-                final File outputFolder = new File(outputFolderPath);
-                if (!outputFolder.exists()) {
-                    FilesUtils.newDirectory(outputFolderPath);
-                }
-                // Searches for the images
-                final LinkedList<String> imagesFilenames = new LinkedList<>();
-                String editorText = editor.getTextString();
-                Pattern pattern = Pattern.compile("(?<=\\\\includegraphics).*\\{.*\\}", Pattern.MULTILINE);
-                Matcher matcher = pattern.matcher(editorText);
-                while (matcher.find()) {
-                    if (matcher.group().length() > 0) {
-                        String group = matcher.group();
-                        group = group.substring(group.indexOf("{") + 1, group.indexOf("}"));
-                        if (group.contains(".")) {
-                            group = group.substring(0, group.indexOf("."));
-                        }
-                        imagesFilenames.add(group);
-                    }
-                }
-
-                FilenameFilter compareWithoutExtension = new FilenameFilter() {
-                    @Override
-                    public boolean accept(File dir, String filename) {
-                        String filenameNoExt = filename;
-                        if (filename.contains(".")) {
-                            filenameNoExt = filename.substring(0, filename.lastIndexOf("."));
-                        }
-                        return imagesFilenames.contains(filenameNoExt);
-                    }
-                };
-
-                File[] images = imagesFolder.listFiles(compareWithoutExtension);
-                LinkedList<File> files = new LinkedList<>();
-                Collections.addAll(files, images);
-
-                files.add(document);
-                // Zips the files
-                String docName = document.getName();
-                Log.v("dsdsd", docName);
-                File zip = ZipUtils.newZipFile(outputFolderPath + document.getName(), files);
-                zip.deleteOnExit();
-                RequestParams params = new RequestParams();
-                try {
-                    params.put("zip_file", zip, "application/zip");
-                } catch (FileNotFoundException e) {
-                    e.printStackTrace();
-                }
-                asyncDialog.setMessage("Waiting for the server to compile...");
-                LatexNetClient.post("latex", params, new FileAsyncHttpResponseHandler(this) {
+                LatexCompiler.generatePDF(getApplicationContext(), editor, imagesFolder, outputFolder, document, new FileAsyncHttpResponseHandler(this) {
                     @Override
                     public void onFailure(int statusCode, cz.msebera.android.httpclient.Header[] headers, Throwable throwable, File file) {
                         asyncDialog.dismiss();
                         // On failure shows an error toast
-                        Toast.makeText(getApplicationContext(), "Server Error. Please check your Internet connection / Firewall.",
+                        Toast.makeText(getApplicationContext(), "Server Error.",
                                 Toast.LENGTH_LONG).show();
                         Log.e("LATEX_NET", throwable.getMessage() + "");
                     }
@@ -715,7 +697,6 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
                     @Override
                     public void onSuccess(int statusCode, cz.msebera.android.httpclient.Header[] headers, File file) {
                         asyncDialog.dismiss();
-                        final Document receivedDocument = new Document(file);
                         Header header = null;
                         // Retrieves the content-type header
                         for (Header h : headers) {
@@ -724,51 +705,58 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
                                 break;
                             }
                         }
-                        assert header != null;
-                        // If it's a PDF, the compile succeeded
-                        if (header.getValue().equals("application/pdf")) {
-                            // Saves the file in the output directory and tries to open it
-                            byte[] bytes = FilesUtils.readBinaryFile(file);
-                            String pdfName = document.getName().substring(0, document.getName().lastIndexOf(".")) + ".pdf";
-                            File pdf = new File(outputFolderPath, pdfName);
-                            FilesUtils.writeBinaryFile(pdf, bytes);
-                            Intent pdfIntent = new Intent();
-                            pdfIntent.setAction(Intent.ACTION_VIEW);
-                            pdfIntent.setDataAndType(Uri.fromFile(pdf), "application/pdf");
-
-                            if (pdfIntent.resolveActivity(getPackageManager()) != null) {
-                                startActivity(pdfIntent);
-                            } else {
-                                Toast.makeText(getApplicationContext(), "You don't have any app to show pdf!",
-                                        Toast.LENGTH_LONG).show();
-                            }
-                        } else {
-                            // Asks the user if he wishes to open the log.
-                            DialogsUtil.showConfirmDialog(EditorActivity.this,
-                                    getString(R.string.compiling_error_title),
-                                    getString(R.string.compiling_error_message),
-                                    new DialogInterface.OnClickListener() {
-                                        @Override
-                                        public void onClick(DialogInterface dialogInterface, int i) {
-                                            dialogInterface.dismiss();
-                                        }
-                                    },new DialogInterface.OnClickListener() {
-                                        @Override
-                                        public void onClick(DialogInterface dialogInterface, int i) {
-                                            receivedDocument.setLog();
-                                            openDocumentInEditor(receivedDocument);
-                                        }
-                                    }
-                            );
-                        }
+                        openResultingFile(header, file);
                     }
-
                 });
+                asyncDialog.setMessage("Waiting for the server to compile...");
             } else {
                 // Empty file
                 Toast.makeText(getApplicationContext(), "Can't compile an empty file!",
                         Toast.LENGTH_LONG).show();
             }
+        }
+    }
+
+    private void openResultingFile(Header header, File file) {
+        final String outputFolderPath = PreferenceHelper.getOutputFolder(getApplicationContext());
+        final String headerType = header.getValue();
+        // If it's a PDF, the compile succeeded
+        if (headerType.equals("application/pdf") || headerType.equals("application/x-dvi")) {
+            String ext = headerType.substring(headerType.length()-3, headerType.length());
+            // Saves the file in the output directory and tries to open it
+            byte[] bytes = FilesUtils.readBinaryFile(file);
+            String pdfName = document.getName().substring(0, document.getName().lastIndexOf(".")+1) + ext;
+            File pdf = new File(outputFolderPath, pdfName);
+            FilesUtils.writeBinaryFile(pdf, bytes);
+            Intent pdfIntent = new Intent();
+            pdfIntent.setAction(Intent.ACTION_VIEW);
+            pdfIntent.setDataAndType(Uri.fromFile(pdf), headerType);
+
+            if (pdfIntent.resolveActivity(getPackageManager()) != null) {
+                startActivity(pdfIntent);
+            } else {
+                Toast.makeText(getApplicationContext(), "You don't have any " + ext + " reader!",
+                        Toast.LENGTH_LONG).show();
+            }
+        } else {
+            final Document receivedDocument = new Document(file);
+            // Asks the user if he wishes to open the log.
+            DialogsUtil.showConfirmDialog(EditorActivity.this,
+                    getString(R.string.compiling_error_title),
+                    getString(R.string.compiling_error_message),
+                    new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialogInterface, int i) {
+                            dialogInterface.dismiss();
+                        }
+                    },new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialogInterface, int i) {
+                            receivedDocument.setLog();
+                            openDocumentInEditor(receivedDocument);
+                        }
+                    }
+            );
         }
     }
 

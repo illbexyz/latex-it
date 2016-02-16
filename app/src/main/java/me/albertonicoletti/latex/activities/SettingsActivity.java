@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.os.Bundle;
 
 import me.albertonicoletti.latex.SettingsFragment;
+import me.albertonicoletti.utils.FilesUtils;
 
 /**
  * Settings activity.
@@ -15,6 +16,14 @@ public class SettingsActivity extends Activity  {
     public static final String FONT_SIZE = "font_size";
     public static final String IMAGES_FOLDER = "images_folder";
     public static final String OUTPUT_FOLDER = "output_folder";
+    public static final String EXE = "executable";
+    public static final String TAB_SIZE = "tab_size";
+
+    public static final String DEFAULT_IMAGES_FOLDER =
+            FilesUtils.getDocumentsDir().getPath() + "/Images/";
+
+    public static final String DEFAULT_OUTPUT_FOLDER =
+            FilesUtils.getDocumentsDir().getPath() + "/LatexOutput/";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

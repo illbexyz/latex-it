@@ -11,6 +11,14 @@
             android:entryValues="@array/available_font_sizes"
             android:defaultValue="@string/default_font_size">
         </ListPreference>
+        <ListPreference
+            android:key="tab_size"
+            android:title="Tab Size"
+            android:dialogTitle="@string/tab_size"
+            android:entries="@array/available_tab_sizes"
+            android:entryValues="@array/available_tab_sizes"
+            android:defaultValue="@string/default_tab_size">
+        </ListPreference>
     </PreferenceCategory>
     <PreferenceCategory
         android:key="image_category"
@@ -25,5 +33,17 @@
             android:title="Output PDF Folder"
             android:summary="">
         </EditTextPreference>
+    </PreferenceCategory>
+    <PreferenceCategory
+        android:key="server_category"
+        android:title="Server Settings">
+        <ListPreference
+            android:key="executable"
+            android:title="Executable"
+            android:dialogTitle="@string/executable"
+            android:entries="@array/available_executables"
+            android:entryValues="@array/available_executables"
+            android:defaultValue="@string/default_executable">
+        </ListPreference>
     </PreferenceCategory>
 </PreferenceScreen>

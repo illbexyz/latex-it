@@ -17,6 +17,8 @@ public class Document extends File {
 
     private boolean isSaved = true;
 
+    private String savedText = "";
+
     public Document(String path) {
         super(path);
     }
@@ -47,5 +49,18 @@ public class Document extends File {
 
     public void setSaved(boolean saved) {
         isSaved = saved;
+        savedText = "";
+    }
+
+    public void setSavedText(String text) {
+        this.savedText = text;
+    }
+
+    public String getSavedText() {
+        return this.savedText;
+    }
+
+    public boolean hasSavedText() {
+        return this.savedText.length() > 0;
     }
 }

@@ -48,5 +48,9 @@
     <string name="donations_description">The app is ad free, if you like it, a little donation would help me to maintain the server :D</string>
     <string name="confirm_save_title">Save File?</string>
     <string name="confirm_save_message">Do you want to save the changes?</string>
+    <string name="executable">Executable</string>
+    <string name="default_executable">pdflatex</string>
+    <string name="tab_size">Tab Size</string>
+    <string name="default_tab_size">2</string>
 
 </resources>

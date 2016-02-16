@@ -1,6 +1,12 @@
 package me.albertonicoletti.latex;
 
 import android.content.Context;
+import android.util.JsonReader;
+import android.util.Log;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -17,52 +23,60 @@ import me.albertonicoletti.utils.FilesUtils;
 public class DataPersistenceUtil {
 
     /**
-     * Writes in the internal memory a file named open_documents, containing the paths of the
+     * Writes in the internal memory a file named open_documents.json, containing the paths of the
      * open files.
-     * The file is formatted as:
-     *  filename
-     *  t/f
-     * t/f means if the file is open is the editor or not
      * @param context Context
      * @param documents Documents list
      */
     public static void saveFilesPath(Context context, LinkedList<Document> documents){
         FilesUtils.deleteInternalFiles(context);
-        File persistentFile = new File(context.getFilesDir(), "open_documents");
-        String filepaths = "";
-        for (Document d : documents) {
-            String open = "f";
-            if(d.isOpen()){
-                open = "t";
+        JSONObject json = new JSONObject();
+        JSONArray files = new JSONArray();
+        File persistentFile = new File(context.getFilesDir(), "open_documents.json");
+        try {
+            for (Document d : documents) {
+                JSONObject doc = new JSONObject();
+                doc.put("path", d.getPath());
+                doc.put("open", d.isOpen());
+                doc.put("savedText", d.getSavedText());
+                files.put(doc);
             }
-            String path = d.getPath();
-            filepaths += path + "\n";
-            filepaths += open + "\n";
+            json.put("documents", files);
+        } catch (JSONException e) {
+            Log.e("JSON", e.getMessage());
         }
-        FilesUtils.writeFile(persistentFile, filepaths);
+        FilesUtils.writeFile(persistentFile, json.toString());
     }
 
 
     /**
-     * Reads the open_documents file and returns a Document list
+     * Reads the open_documents.json file and returns a Document list
      * @param context Context
      * @return Document list
      */
     public static LinkedList<Document> readSavedOpenFiles(Context context){
         LinkedList<Document> files = new LinkedList<>();
-        File savedDocuments = new File(context.getFilesDir(), "open_documents");
-        try {
-            Scanner scanner = new Scanner(savedDocuments);
-            while(scanner.hasNextLine()){
-                files.add(new Document(scanner.nextLine()));
-                if(scanner.hasNextLine()) {
-                    if (scanner.nextLine().equals("t")) {
-                        files.getLast().setOpen(true);
+        File file = new File(context.getFilesDir(), "open_documents.json");
+        if(file.exists()) {
+            try {
+                JSONObject json;
+                JSONArray savedDocuments;
+                String text = FilesUtils.readTextFile(file);
+                json = new JSONObject(text);
+                savedDocuments = (JSONArray) json.get("documents");
+                for (int i = 0; i < savedDocuments.length(); i++) {
+                    JSONObject doc = (JSONObject) savedDocuments.get(i);
+                    Document d = new Document(doc.getString("path"));
+                    d.setOpen(doc.getBoolean("open"));
+                    String savedText = doc.getString("savedText");
+                    if(savedText.length() > 0) {
+                        d.setSavedText(savedText);
                     }
+                    files.add(d);
                 }
+            } catch(JSONException e) {
+                Log.e("JSON", e.getMessage());
             }
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
         }
         return files;
     }

@@ -12,8 +12,9 @@ import com.loopj.android.http.RequestParams;
  */
 public class LatexNetClient {
 
-    private static final String BASE_URL = "http://latex-compiler.bitnamiapp.com:1234/";
-    //private static final String BASE_URL = "http://192.168.1.107:8080/";
+    private static final String BASE_URL = "http://compiler.latexit.illbe.xyz:1234/";
+    // private static final String BASE_URL = "http://latex-compiler.bitnamiapp.com:1234/";
+    // private static final String BASE_URL = "http://192.168.1.104:1234/";
     private static AsyncHttpClient client = new AsyncHttpClient();
 
     /**

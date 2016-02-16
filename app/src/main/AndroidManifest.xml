@@ -28,6 +28,49 @@
                 <data android:mimeType="application/x-latex" />
                 <data android:mimeType="application/x-tex" />
                 <data android:mimeType="text/plain" />
+                <data android:mimeType="text/x-latex" />
+                <data android:mimeType="text/x-tex" />
+                <data android:mimeType="text/vnd.latex-z" />
+            </intent-filter>
+            <intent-filter
+                android:label="@string/app_name"
+                android:priority="50" >
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.BROWSABLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <data android:scheme="file" />
+                <data android:host="*" />
+
+                <data android:pathPattern=".*\\.tex" />
+                <data android:pathPattern=".*\\..*\\.tex" />
+                <data android:pathPattern=".*\\..*\\..*\\.tex" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\.tex" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\.tex" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\.tex" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\..*\\.tex" />
+            </intent-filter>
+
+            <intent-filter
+                android:label="@string/app_name"
+                android:priority="50" >
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.BROWSABLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <data android:scheme="file" />
+                <data android:host="*" />
+                <data android:mimeType="*/*" />
+
+                <data android:pathPattern=".*\\.tex" />
+                <data android:pathPattern=".*\\..*\\.tex" />
+                <data android:pathPattern=".*\\..*\\..*\\.tex" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\.tex" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\.tex" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\.tex" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\..*\\.tex" />
             </intent-filter>
         </activity>
 

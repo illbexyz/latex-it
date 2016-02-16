@@ -42,4 +42,16 @@
         <item>23</item>
         <item>24</item>
     </string-array>
+
+    <string-array name="available_tab_sizes">
+        <item>2</item>
+        <item>3</item>
+        <item>4</item>
+    </string-array>
+
+    <string-array name="available_executables">
+        <item>pdflatex</item>
+        <item>xelatex</item>
+        <item>latexmk</item>
+    </string-array>
 </resources>
