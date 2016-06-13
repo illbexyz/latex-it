@@ -79,20 +79,34 @@ public class SettingsFragment extends PreferenceFragment implements
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
         switch (key){
             case SettingsActivity.IMAGES_FOLDER:
-                EditTextPreference imagesFolder = (EditTextPreference) findPreference(SettingsActivity.IMAGES_FOLDER);
-                imagesFolder.setSummary(ensureFolderSlash(imagesFolder.getText()));
+                updateEditText(SettingsActivity.IMAGES_FOLDER);
                 break;
             case SettingsActivity.OUTPUT_FOLDER:
-                EditTextPreference outputFolder = (EditTextPreference) findPreference(SettingsActivity.OUTPUT_FOLDER);
-                outputFolder.setSummary(ensureFolderSlash(outputFolder.getText()));
+                updateEditText(SettingsActivity.OUTPUT_FOLDER);
+                break;
+            case SettingsActivity.SERVER_ADDRESS:
+                updateEditText(SettingsActivity.SERVER_ADDRESS);
                 break;
             case SettingsActivity.FONT_SIZE:
-                ListPreference fontSize = (ListPreference) findPreference(SettingsActivity.FONT_SIZE);
-                fontSize.setSummary(fontSize.getValue());
+                updateList(SettingsActivity.FONT_SIZE);
+                break;
+            case SettingsActivity.TAB_SIZE:
+                updateList(SettingsActivity.TAB_SIZE);
+                break;
             case SettingsActivity.EXE:
-                ListPreference exe = (ListPreference) findPreference(SettingsActivity.EXE);
-                exe.setSummary(exe.getValue());
+                updateList(SettingsActivity.EXE);
+                break;
         }
+    }
+
+    private void updateEditText(String id) {
+        EditTextPreference edit = (EditTextPreference) findPreference(id);
+        edit.setSummary(ensureFolderSlash(edit.getText()));
+    }
+
+    private void updateList(String id) {
+        ListPreference list = (ListPreference) findPreference(id);
+        list.setSummary(list.getValue());
     }
 
     /**

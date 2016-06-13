@@ -1,6 +1,8 @@
 package me.albertonicoletti.latex;
 
 
+import android.content.Context;
+
 import com.loopj.android.http.AsyncHttpClient;
 import com.loopj.android.http.AsyncHttpResponseHandler;
 import com.loopj.android.http.RequestParams;
@@ -12,19 +14,19 @@ import com.loopj.android.http.RequestParams;
  */
 public class LatexNetClient {
 
-    private static final String BASE_URL = "http://compiler.latexit.illbe.xyz:1234/";
-    // private static final String BASE_URL = "http://latex-compiler.bitnamiapp.com:1234/";
-    // private static final String BASE_URL = "http://192.168.1.104:1234/";
-    private static AsyncHttpClient client = new AsyncHttpClient();
+    private Context ctx;
+    private AsyncHttpClient client = new AsyncHttpClient();
+
+    public LatexNetClient(Context ctx) {
+        this.ctx = ctx;
+    }
 
     /**
-     * Performs a post http method
-     * @param path Relative path where to execute the post action. E.g. http://baseurl/path
-     * @param params Parameters
-     * @param responseHandler Response handler
+     * Get the base url of the server
+     * @return The base url from the preferences
      */
-    public static void post(String path, RequestParams params, AsyncHttpResponseHandler responseHandler) {
-        client.post(getAbsoluteUrl(path), params, responseHandler);
+    private String getBaseUrl() {
+        return PreferenceHelper.getServerAddress(ctx);
     }
 
     /**
@@ -32,8 +34,18 @@ public class LatexNetClient {
      * @param relativeUrl Relative path
      * @return Absolute path
      */
-    private static String getAbsoluteUrl(String relativeUrl) {
-        return BASE_URL + relativeUrl;
+    private String getAbsoluteUrl(String relativeUrl) {
+        return this.getBaseUrl() + relativeUrl;
+    }
+
+    /**
+     * Performs a post http method
+     * @param path Relative path where to execute the post action. E.g. http://baseurl/path
+     * @param params Parameters
+     * @param responseHandler Response handler
+     */
+    public void post(String path, RequestParams params, AsyncHttpResponseHandler responseHandler) {
+        client.post(getAbsoluteUrl(path), params, responseHandler);
     }
 
 }

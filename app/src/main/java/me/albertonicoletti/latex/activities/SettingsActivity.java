@@ -17,6 +17,7 @@ public class SettingsActivity extends Activity  {
     public static final String IMAGES_FOLDER = "images_folder";
     public static final String OUTPUT_FOLDER = "output_folder";
     public static final String EXE = "executable";
+    public static final String SERVER_ADDRESS = "server_address";
     public static final String TAB_SIZE = "tab_size";
 
     public static final String DEFAULT_IMAGES_FOLDER =

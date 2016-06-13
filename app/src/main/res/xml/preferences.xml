@@ -37,6 +37,12 @@
     <PreferenceCategory
         android:key="server_category"
         android:title="Server Settings">
+        <EditTextPreference
+            android:key="server_address"
+            android:title="Server Address"
+            android:defaultValue="http://compiler.latexit.illbe.xyz:1234/"
+            android:summary="">
+        </EditTextPreference>
         <ListPreference
             android:key="executable"
             android:title="Executable"

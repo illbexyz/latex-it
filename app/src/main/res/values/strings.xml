@@ -50,6 +50,7 @@
     <string name="confirm_save_message">Do you want to save the changes?</string>
     <string name="executable">Executable</string>
     <string name="default_executable">pdflatex</string>
+    <string name="default_server_address">http://compiler.latexit.illbe.xyz:1234/</string>
     <string name="tab_size">Tab Size</string>
     <string name="default_tab_size">2</string>
 

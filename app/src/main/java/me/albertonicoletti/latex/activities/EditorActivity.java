@@ -77,6 +77,7 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
 
     public final static int WRITE_EXTERNAL_STORAGE_PERMISSION = 1;
 
+    private LatexCompiler latexCompiler;
     private ActionBarDrawerToggle mDrawerToggle;
     /** Left Drawer Layout */
     private DrawerLayout mDrawerLayout;
@@ -101,6 +102,7 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        latexCompiler = new LatexCompiler(getApplicationContext());
         initPreferences();
         setContentView(R.layout.activity_editor);
         initSymbols();
@@ -685,7 +687,7 @@ public class EditorActivity extends Activity implements DocumentClickListener.Do
                 final ProgressDialog asyncDialog = new ProgressDialog(EditorActivity.this);
                 asyncDialog.setMessage("Compressing and sending files...");
                 asyncDialog.show();
-                LatexCompiler.generatePDF(getApplicationContext(), editor, imagesFolder, outputFolder, document, new FileAsyncHttpResponseHandler(this) {
+                latexCompiler.generatePDF(editor, imagesFolder, outputFolder, document, new FileAsyncHttpResponseHandler(this) {
                     @Override
                     public void onFailure(int statusCode, cz.msebera.android.httpclient.Header[] headers, Throwable throwable, File file) {
                         asyncDialog.dismiss();

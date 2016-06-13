@@ -23,13 +23,20 @@ import me.albertonicoletti.utils.ZipUtils;
  */
 public class LatexCompiler {
 
+    private Context ctx;
+    private LatexNetClient netClient;
+
+    public LatexCompiler(Context ctx) {
+        this.ctx = ctx;
+        this.netClient = new LatexNetClient(ctx);
+    }
+
     /**
      * Routine that searches for the images used in the current document, zips them with the file
      * and sends it to the server.
      * It will show the response pdf or log.
      */
-    public static void generatePDF(
-            Context ctx,
+    public void generatePDF(
             LatexEditor editor,
             File imagesFolder,
             File outputFolder,
@@ -80,7 +87,7 @@ public class LatexCompiler {
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
-        LatexNetClient.post("latex", params, handler);
+        netClient.post("latex", params, handler);
 
     }
 }

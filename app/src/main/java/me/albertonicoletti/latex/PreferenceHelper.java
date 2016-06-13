@@ -21,4 +21,9 @@ public class PreferenceHelper {
         return s.getString(SettingsActivity.IMAGES_FOLDER, "");
     }
 
+    public static String getServerAddress(Context ctx) {
+        SharedPreferences s = PreferenceManager.getDefaultSharedPreferences(ctx);
+        return s.getString(SettingsActivity.SERVER_ADDRESS, "");
+    }
+
 }
